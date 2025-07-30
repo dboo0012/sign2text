@@ -25,6 +25,16 @@ WASL Sign Language Recognition interface authored by Team MCS12 - FIT3162.
 - **WebSocket** - Real-time bidirectional communication protocol
 - **Socket.IO** - Enhanced WebSocket library
 
-## Data Processing & Model training
+# Prerequisites
 
-- **Tensor Processing** - Multi-dimensional data handling
+- [NodeJS 22.17.1](https://nodejs.org/en/download)
+- Enable exec policy if `npm.ps1 cannot be loaded error` pops up during installation.
+  - Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in windows powershell.
+
+# Running the app (from /sign2text)
+
+```
+cd frontend
+npm i
+npm run dev
+```
