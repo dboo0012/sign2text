@@ -31,10 +31,11 @@ WASL Sign Language Recognition interface authored by Team MCS12 - FIT3162.
 - Enable exec policy if `npm.ps1 cannot be loaded error` pops up during installation.
   - Run `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` in windows powershell.
 
-# Running the app (from /sign2text)
+# Running the app
 
 ```
-cd frontend
+git clone <repo>
+cd /sign2text
 npm i
 npm run dev
 ```
