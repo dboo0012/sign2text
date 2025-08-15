@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useWebSocketContext } from '../contexts/websocketContext';
 import { WebSocketConnectionState } from '../types/websocket';
 
@@ -28,7 +28,7 @@ export default function WebSocketTestComponent() {
   const [wsUrl, setWsUrl] = useState('ws://localhost:8000/ws/video_stream');
 
   // Track messages for display
-  React.useEffect(() => {
+  useEffect(() => {
     if (lastMessage) {
       const newMessage: TestMessage = {
         id: Date.now().toString(),
@@ -37,7 +37,7 @@ export default function WebSocketTestComponent() {
         timestamp: new Date(),
         direction: 'incoming'
       };
-      setMessages(prev => [newMessage, ...prev.slice(0, 9)]); // Keep last 10 messages
+      setMessages(prev => [...prev, newMessage].slice(-10)); // Keep last 10 messages
     }
   }, [lastMessage]);
 
@@ -64,7 +64,7 @@ export default function WebSocketTestComponent() {
       timestamp: new Date(),
       direction: 'outgoing'
     };
-    setMessages(prev => [displayMessage, ...prev.slice(0, 9)]);
+    setMessages(prev => [...prev, displayMessage].slice(-10));
   };
 
   const handleSendTestFrame = () => {
@@ -88,7 +88,7 @@ export default function WebSocketTestComponent() {
       timestamp: new Date(),
       direction: 'outgoing'
     };
-    setMessages(prev => [displayMessage, ...prev.slice(0, 9)]);
+    setMessages(prev => [...prev, displayMessage].slice(-10));
   };
 
   const getConnectionStatusColor = () => {
@@ -272,11 +272,11 @@ export default function WebSocketTestComponent() {
             </button>
           </div>
           
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2">
             {messages.length === 0 ? (
               <p className="text-gray-500 text-sm">No messages yet. Connect and interact to see message history.</p>
             ) : (
-              messages.map((message) => (
+              messages.slice().reverse().map((message) => (
                 <div
                   key={message.id}
                   className={`p-3 rounded-md text-sm ${
