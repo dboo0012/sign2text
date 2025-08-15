@@ -6,6 +6,7 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
+  Keypoints,
 } from "../types/websocket";
 
 interface WebSocketContextType {
@@ -14,7 +15,7 @@ interface WebSocketContextType {
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
-  sendFrame: (frameData: string) => void;
+  sendKeypoints: (keypoints: Keypoints, sequenceId?: string) => void;
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;

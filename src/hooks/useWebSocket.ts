@@ -6,7 +6,7 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
-  PongMessage,
+  Keypoints,
 } from "../types/websocket";
 
 interface UseWebSocketOptions {
@@ -23,7 +23,7 @@ interface UseWebSocketReturn {
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
-  sendFrame: (frameData: string) => void;
+  sendKeypoints: (keypoints: Keypoints, sequenceId?: string) => void;
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;
@@ -189,11 +189,12 @@ export function useWebSocket({
     }
   }, []);
 
-  const sendFrame = useCallback(
-    (frameData: string) => {
+  const sendKeypoints = useCallback(
+    (keypoints: Keypoints, sequenceId?: string) => {
       sendMessage({
-        type: "frame",
-        frame: frameData,
+        type: "keypoint_sequence",
+        keypoints,
+        sequence_id: sequenceId || `seq_${Date.now()}`,
       });
     },
     [sendMessage]
@@ -220,7 +221,7 @@ export function useWebSocket({
     lastKeypointsData,
     lastError,
     sendMessage,
-    sendFrame,
+    sendKeypoints,
     connect,
     disconnect,
     isConnected: connectionState === WebSocketConnectionState.CONNECTED,

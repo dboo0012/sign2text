@@ -9,10 +9,17 @@ export interface FrameInfo {
 }
 
 export interface Keypoints {
-  pose: number[][];
-  face: number[][];
-  left_hand: number[][];
-  right_hand: number[][];
+  // 33 pose landmarks: [x, y, z, visibility]
+  pose: [number, number, number, number][];
+
+  // 468 face landmarks: [x, y, z]
+  face: [number, number, number][];
+
+  // 21 left hand landmarks: [x, y, z]
+  left_hand: [number, number, number][];
+
+  // 21 right hand landmarks: [x, y, z]
+  right_hand: [number, number, number][];
 }
 
 export interface ProcessingResult {
@@ -27,9 +34,10 @@ export interface WebSocketMessage {
   timestamp?: number;
 }
 
-export interface FrameMessage extends WebSocketMessage {
-  type: "frame";
-  frame: string; // Base64 encoded image
+export interface KeypointSequenceMessage extends WebSocketMessage {
+  type: "keypoint_sequence";
+  keypoints: Keypoints;
+  sequence_id: string;
 }
 
 export interface PingMessage extends WebSocketMessage {
@@ -51,7 +59,7 @@ export interface ErrorMessage extends WebSocketMessage {
 }
 
 export type IncomingMessage = KeypointsMessage | PongMessage | ErrorMessage;
-export type OutgoingMessage = FrameMessage | PingMessage;
+export type OutgoingMessage = PingMessage | KeypointSequenceMessage;
 
 export const WebSocketConnectionState = {
   CONNECTING: "CONNECTING",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWebSocketContext } from '../contexts/websocketContext';
 import { WebSocketConnectionState } from '../types/websocket';
+import type { Keypoints } from '../types/websocket';
 
 interface TestMessage {
   id: string;
@@ -17,15 +18,16 @@ export default function WebSocketTestComponent() {
     lastKeypointsData,
     lastError,
     sendMessage,
-    sendFrame,
+    sendKeypoints,
     connect,
     disconnect,
     isConnected
   } = useWebSocketContext();
 
   const [messages, setMessages] = useState<TestMessage[]>([]);
-  const [testFrame, setTestFrame] = useState<string>('');
   const [wsUrl, setWsUrl] = useState('ws://localhost:8000/ws/video_stream');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamInterval, setStreamInterval] = useState<number | null>(null);
 
   // Track messages for display
   useEffect(() => {
@@ -67,29 +69,62 @@ export default function WebSocketTestComponent() {
     setMessages(prev => [...prev, displayMessage].slice(-10));
   };
 
-  const handleSendTestFrame = () => {
-    if (!testFrame.trim()) {
-      alert('Please enter test frame data');
-      return;
-    }
+  const handleSendTestKeypoints = () => {
+    const keypoints = generateRandomKeypoints();
+    const sequenceId = `test_${Date.now()}`;
     
-    // Create a simple base64 test image or use the provided test data
-    const frameData = testFrame.startsWith('data:image/') ? 
-      testFrame.split(',')[1] : // Extract base64 part if it's a data URL
-      testFrame;
+    sendKeypoints(keypoints, sequenceId);
     
-    sendFrame(frameData);
+    // Calculate approximate data size for display
+    // Pose: 33 * 4 values, Face: 468 * 3 values, Hands: 21 * 3 * 2 values
+    const totalValues = (33 * 4) + (468 * 3) + (21 * 3 * 2); // 1662 total float values
+    const approximateSize = Math.round((totalValues * 8 + 200) / 1024 * 100) / 100; // KB (8 bytes per float + overhead)
     
     // Add to message display
     const displayMessage: TestMessage = {
       id: Date.now().toString(),
-      type: 'frame',
-      data: { type: 'frame', frame: frameData.substring(0, 50) + '...' },
+      type: 'keypoint_sequence',
+      data: { 
+        type: 'keypoint_sequence', 
+        sequence_id: sequenceId,
+        keypoints,
+        packet_size_kb: approximateSize
+      },
       timestamp: new Date(),
       direction: 'outgoing'
     };
     setMessages(prev => [...prev, displayMessage].slice(-10));
   };
+
+  const startKeypointStream = () => {
+    if (isStreaming) return;
+    
+    setIsStreaming(true);
+    const interval = setInterval(() => {
+      if (isConnected) {
+        handleSendTestKeypoints();
+      }
+    }, 100); // Send every 100ms (10 FPS)
+    
+    setStreamInterval(interval);
+  };
+
+  const stopKeypointStream = () => {
+    setIsStreaming(false);
+    if (streamInterval) {
+      clearInterval(streamInterval);
+      setStreamInterval(null);
+    }
+  };
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (streamInterval) {
+        clearInterval(streamInterval);
+      }
+    };
+  }, [streamInterval]);
 
   const getConnectionStatusColor = () => {
     switch (connectionState) {
@@ -108,21 +143,44 @@ export default function WebSocketTestComponent() {
     setMessages([]);
   };
 
-  const generateTestImage = () => {
-    // Create a simple test image data URL (1x1 pixel red image)
-    const canvas = document.createElement('canvas');
-    canvas.width = 100;
-    canvas.height = 100;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(0, 0, 100, 100);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px Arial';
-      ctx.fillText('TEST', 35, 55);
-    }
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    setTestFrame(dataUrl);
+  const generateRandomKeypoints = (): Keypoints => {
+    // Generate random keypoints matching strict MediaPipe format
+    
+    // Pose: 33 landmarks with [x, y, z, visibility]
+    const pose: [number, number, number, number][] = Array.from({ length: 33 }, () => [
+      Math.random(), // x (0-1 normalized)
+      Math.random(), // y (0-1 normalized)
+      Math.random() * 0.1 - 0.05, // z (small depth values around 0)
+      Math.random() * 0.5 + 0.5 // visibility/confidence (0.5-1.0)
+    ]);
+
+    // Face: 468 landmarks with [x, y, z]
+    const face: [number, number, number][] = Array.from({ length: 468 }, () => [
+      Math.random() * 0.3 + 0.35, // x (face region: 0.35-0.65)
+      Math.random() * 0.4 + 0.2,  // y (face region: 0.2-0.6)
+      Math.random() * 0.01 - 0.005 // z (small depth values)
+    ]);
+
+    // Left hand: 21 landmarks with [x, y, z]
+    const left_hand: [number, number, number][] = Array.from({ length: 21 }, () => [
+      Math.random() * 0.2 + 0.2, // x (left hand region: 0.2-0.4)
+      Math.random() * 0.3 + 0.4, // y (hand region: 0.4-0.7)
+      Math.random() * 0.02 - 0.01 // z (small depth values)
+    ]);
+
+    // Right hand: 21 landmarks with [x, y, z]
+    const right_hand: [number, number, number][] = Array.from({ length: 21 }, () => [
+      Math.random() * 0.2 + 0.6, // x (right hand region: 0.6-0.8)
+      Math.random() * 0.3 + 0.4, // y (hand region: 0.4-0.7)
+      Math.random() * 0.02 - 0.01 // z (small depth values)
+    ]);
+
+    return {
+      pose,
+      face,
+      left_hand,
+      right_hand
+    };
   };
 
   return (
@@ -182,35 +240,35 @@ export default function WebSocketTestComponent() {
           </div>
         </div>
 
-        {/* Frame Testing */}
+        {/* Keypoint Testing */}
         <div className="mb-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Frame Testing</h3>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Test Frame Data (Base64 or Data URL):
-            </label>
-            <div className="flex space-x-2">
-              <textarea
-                value={testFrame}
-                onChange={(e) => setTestFrame(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Paste base64 image data or data URL here..."
-              />
-              <div className="flex flex-col space-y-2">
-                <button
-                  onClick={generateTestImage}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 whitespace-nowrap"
-                >
-                  Generate Test Image
-                </button>
-                <button
-                  onClick={handleSendTestFrame}
-                  disabled={!isConnected || !testFrame.trim()}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  Send Frame
-                </button>
+          <h3 className="text-lg font-semibold text-gray-900">Keypoint Testing</h3>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-4">
+              Test keypoint data transmission by sending randomly generated pose, face, and hand keypoints similar to MediaPipe format.
+            </p>
+            <div className="flex flex-wrap gap-4 items-center">
+              <button
+                onClick={handleSendTestKeypoints}
+                disabled={!isConnected}
+                className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Send Single Keypoint Set
+              </button>
+              <button
+                onClick={isStreaming ? stopKeypointStream : startKeypointStream}
+                disabled={!isConnected}
+                className={`px-6 py-2 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed ${
+                  isStreaming 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {isStreaming ? 'Stop Stream (10 FPS)' : 'Start Stream (10 FPS)'}
+              </button>
+              <div className="text-sm text-gray-500 space-y-1">
+                <div>Generates: 33 pose (x,y,z,v) + 468 face (x,y,z) + 42 hand (x,y,z) landmarks</div>
+                <div className="text-xs">~13.2KB per keypoint set vs ~50-100KB for video frame</div>
               </div>
             </div>
           </div>
