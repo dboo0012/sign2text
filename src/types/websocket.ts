@@ -22,6 +22,19 @@ export interface Keypoints {
   right_hand: [number, number, number][];
 }
 
+// OpenPose format keypoints (raw format from demo files)
+export interface OpenPoseKeypoints {
+  // OpenPose pose: 25 landmarks with [x, y, confidence] flattened
+  pose_keypoints_2d: number[];
+  
+  // OpenPose face: 70 landmarks with [x, y, confidence] flattened  
+  face_keypoints_2d: number[];
+  
+  // OpenPose hands: 21 landmarks each with [x, y, confidence] flattened
+  hand_left_keypoints_2d: number[];
+  hand_right_keypoints_2d: number[];
+}
+
 export interface ProcessingResult {
   success: boolean;
   keypoints: Keypoints;
@@ -36,8 +49,9 @@ export interface WebSocketMessage {
 
 export interface KeypointSequenceMessage extends WebSocketMessage {
   type: "keypoint_sequence";
-  keypoints: Keypoints;
+  keypoints: Keypoints | OpenPoseKeypoints;
   sequence_id: string;
+  format?: "mediapipe" | "openpose";
 }
 
 export interface PingMessage extends WebSocketMessage {
