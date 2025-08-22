@@ -58,7 +58,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       ></div>
       
       {/* Settings Modal */}
-      <div className="fixed bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+      <div className="fixed bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4 outline-2 outline-black flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-gray-200 bg-white">
           <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
@@ -71,7 +71,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         </div>
 
         {/* Settings Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 flex-1">
           {/* Camera Settings */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -303,8 +303,8 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 left-0 right-0 flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50 z-20">
           <button
             onClick={handleReset}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"

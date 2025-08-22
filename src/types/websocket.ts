@@ -1,4 +1,6 @@
 // types/websocket.ts
+import type { OpenPoseKeypoints, OpenPoseData } from "./pose";
+
 export interface FrameInfo {
   width: number;
   height: number;
@@ -36,8 +38,9 @@ export interface WebSocketMessage {
 
 export interface KeypointSequenceMessage extends WebSocketMessage {
   type: "keypoint_sequence";
-  keypoints: Keypoints;
+  keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData;
   sequence_id: string;
+  format?: "mediapipe" | "openpose" | "openpose_raw";
 }
 
 export interface PingMessage extends WebSocketMessage {

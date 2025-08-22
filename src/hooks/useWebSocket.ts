@@ -8,6 +8,7 @@ import type {
   ErrorMessage,
   Keypoints,
 } from "../types/websocket";
+import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 
 interface UseWebSocketOptions {
   url: string;
@@ -23,7 +24,7 @@ interface UseWebSocketReturn {
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
-  sendKeypoints: (keypoints: Keypoints, sequenceId?: string) => void;
+  sendKeypoints: (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => void;
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;
@@ -190,11 +191,12 @@ export function useWebSocket({
   }, []);
 
   const sendKeypoints = useCallback(
-    (keypoints: Keypoints, sequenceId?: string) => {
+    (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => {
       sendMessage({
         type: "keypoint_sequence",
         keypoints,
         sequence_id: sequenceId || `seq_${Date.now()}`,
+        format: format || "mediapipe",
       });
     },
     [sendMessage]
