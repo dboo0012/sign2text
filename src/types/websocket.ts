@@ -1,4 +1,6 @@
 // types/websocket.ts
+import type { OpenPoseKeypoints, OpenPoseData } from "./pose";
+
 export interface FrameInfo {
   width: number;
   height: number;
@@ -22,19 +24,6 @@ export interface Keypoints {
   right_hand: [number, number, number][];
 }
 
-// OpenPose format keypoints (raw format from demo files)
-export interface OpenPoseKeypoints {
-  // OpenPose pose: 25 landmarks with [x, y, confidence] flattened
-  pose_keypoints_2d: number[];
-  
-  // OpenPose face: 70 landmarks with [x, y, confidence] flattened  
-  face_keypoints_2d: number[];
-  
-  // OpenPose hands: 21 landmarks each with [x, y, confidence] flattened
-  hand_left_keypoints_2d: number[];
-  hand_right_keypoints_2d: number[];
-}
-
 export interface ProcessingResult {
   success: boolean;
   keypoints: Keypoints;
@@ -49,9 +38,9 @@ export interface WebSocketMessage {
 
 export interface KeypointSequenceMessage extends WebSocketMessage {
   type: "keypoint_sequence";
-  keypoints: Keypoints | OpenPoseKeypoints;
+  keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData;
   sequence_id: string;
-  format?: "mediapipe" | "openpose";
+  format?: "mediapipe" | "openpose" | "openpose_raw";
 }
 
 export interface PingMessage extends WebSocketMessage {

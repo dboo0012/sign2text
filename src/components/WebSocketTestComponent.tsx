@@ -1,23 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useWebSocketContext } from "../contexts/websocketContext";
 import { WebSocketConnectionState } from "../types/websocket";
-import type { Keypoints, OpenPoseKeypoints } from "../types/websocket";
-
-// OpenPose format interface for the demo files
-interface OpenPoseData {
-  version: number;
-  people: Array<{
-    person_id: number[];
-    pose_keypoints_2d: number[];
-    face_keypoints_2d: number[];
-    hand_left_keypoints_2d: number[];
-    hand_right_keypoints_2d: number[];
-    pose_keypoints_3d: number[];
-    face_keypoints_3d: number[];
-    hand_left_keypoints_3d: number[];
-    hand_right_keypoints_3d: number[];
-  }>;
-}
+import type { OpenPoseData } from "../types/pose";
+import { loadDemoOpenPoseData } from "../utils/keypointsLoader";
 
 interface TestMessage {
   id: string;
@@ -46,17 +31,22 @@ export default function WebSocketTestComponent() {
   const [streamInterval, setStreamInterval] = useState<number | null>(null);
 
   // Demo data state
-  const [demoKeypoints, setDemoKeypoints] = useState<OpenPoseKeypoints[]>([]);
+  const [demoKeypoints, setDemoKeypoints] = useState<OpenPoseData[]>([]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [fps, setFps] = useState(10);
-  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(true);
   const [demoLoaded, setDemoLoaded] = useState(false);
+
+  // Helper function to generate unique message IDs
+  const generateMessageId = () => {
+    return crypto.randomUUID();
+  };
 
   // Track messages for display
   useEffect(() => {
     if (lastMessage) {
       const newMessage: TestMessage = {
-        id: Date.now().toString(),
+        id: generateMessageId(),
         type: lastMessage.type,
         data: lastMessage,
         timestamp: new Date(),
@@ -65,6 +55,25 @@ export default function WebSocketTestComponent() {
       setMessages((prev) => [...prev, newMessage].slice(-10)); // Keep last 10 messages
     }
   }, [lastMessage]);
+
+  // Load demo data on mount
+  useEffect(() => {
+    const loadDemoData = async () => {
+      setIsLoadingDemo(true);
+      try {
+        const openPoseDataArray = await loadDemoOpenPoseData();
+        setDemoKeypoints(openPoseDataArray);
+        setDemoLoaded(true);
+        console.log(`Loaded ${openPoseDataArray.length} OpenPose data frames from demo data`);
+      } catch (error) {
+        console.error("Failed to load demo OpenPose data:", error);
+      } finally {
+        setIsLoadingDemo(false);
+      }
+    };
+
+    loadDemoData();
+  }, []);
 
   const handleConnect = () => {
     connect();
@@ -83,7 +92,7 @@ export default function WebSocketTestComponent() {
 
     // Add to message display
     const displayMessage: TestMessage = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       type: "ping",
       data: pingMessage,
       timestamp: new Date(),
@@ -92,25 +101,26 @@ export default function WebSocketTestComponent() {
     setMessages((prev) => [...prev, displayMessage].slice(-10));
   };
 
-  const handleSendTestKeypoints = () => {
+  const handleSendTestKeypoints = async () => {
     if (demoLoaded && demoKeypoints.length > 0) {
-      const keypoints = demoKeypoints[currentFrameIndex];
+      // Use pre-loaded OpenPose data
+      const openPoseData = demoKeypoints[currentFrameIndex];
       const sequenceId = `demo_${Date.now()}_frame_${currentFrameIndex}`;
 
-      sendKeypoints(keypoints, sequenceId, "openpose");
+      sendKeypoints(openPoseData, sequenceId, "openpose_raw");
 
       // Add to message display
       const displayMessage: TestMessage = {
-        id: Date.now().toString(),
+        id: generateMessageId(),
         type: "keypoint_sequence",
         data: {
           type: "keypoint_sequence",
           sequence_id: sequenceId,
-          keypoints,
+          keypoints: openPoseData,
           frame_index: currentFrameIndex,
           total_frames: demoKeypoints.length,
-          source: "demo_data",
-          format: "openpose",
+          source: "demo_data_preloaded_raw",
+          format: "openpose_raw",
         },
         timestamp: new Date(),
         direction: "outgoing",
@@ -120,33 +130,8 @@ export default function WebSocketTestComponent() {
       // Move to next frame (loop back to start if at end)
       setCurrentFrameIndex((prev) => (prev + 1) % demoKeypoints.length);
     } else {
-      // Fallback to random keypoints if demo not loaded
-      const keypoints = generateRandomKeypoints();
-      const sequenceId = `test_${Date.now()}`;
-
-      sendKeypoints(keypoints, sequenceId, "mediapipe");
-
-      // Calculate approximate data size for display
-      const totalValues = 33 * 4 + 468 * 3 + 21 * 3 * 2;
-      const approximateSize =
-        Math.round(((totalValues * 8 + 200) / 1024) * 100) / 100;
-
-      // Add to message display
-      const displayMessage: TestMessage = {
-        id: Date.now().toString(),
-        type: "keypoint_sequence",
-        data: {
-          type: "keypoint_sequence",
-          sequence_id: sequenceId,
-          keypoints,
-          packet_size_kb: approximateSize,
-          source: "random_generated",
-          format: "mediapipe",
-        },
-        timestamp: new Date(),
-        direction: "outgoing",
-      };
-      setMessages((prev) => [...prev, displayMessage].slice(-10));
+      // Demo data not loaded yet
+      console.warn("Demo data is still loading. Please wait...");
     }
   };
 
@@ -196,96 +181,6 @@ export default function WebSocketTestComponent() {
 
   const clearMessages = () => {
     setMessages([]);
-  };
-
-  // Load demo keypoints from JSON files (keeping OpenPose format)
-  const loadDemoKeypoints = async () => {
-    setIsLoadingDemo(true);
-    try {
-      const keypoints: OpenPoseKeypoints[] = [];
-
-      // Load all keypoint files sequentially
-      for (let i = 0; i < 126; i++) {
-        const frameNumber = i.toString().padStart(12, "0");
-        const filename = `_2FBDaOPYig_1-3-rgb_front_${frameNumber}_keypoints.json`;
-
-        try {
-          const response = await fetch(`/demo/${filename}`);
-          if (response.ok) {
-            const openPoseData: OpenPoseData = await response.json();
-            if (openPoseData.people && openPoseData.people.length > 0) {
-              const person = openPoseData.people[0]; // Take first person
-              const openPoseKeypoints: OpenPoseKeypoints = {
-                pose_keypoints_2d: person.pose_keypoints_2d,
-                face_keypoints_2d: person.face_keypoints_2d,
-                hand_left_keypoints_2d: person.hand_left_keypoints_2d,
-                hand_right_keypoints_2d: person.hand_right_keypoints_2d,
-              };
-              keypoints.push(openPoseKeypoints);
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to load ${filename}:`, error);
-        }
-      }
-
-      setDemoKeypoints(keypoints);
-      setDemoLoaded(true);
-      console.log(`Loaded ${keypoints.length} keypoint frames from demo data`);
-    } catch (error) {
-      console.error("Failed to load demo keypoints:", error);
-    } finally {
-      setIsLoadingDemo(false);
-    }
-  };
-
-  const generateRandomKeypoints = (): Keypoints => {
-    // Generate random keypoints matching strict MediaPipe format
-
-    // Pose: 33 landmarks with [x, y, z, visibility]
-    const pose: [number, number, number, number][] = Array.from(
-      { length: 33 },
-      () => [
-        Math.random(), // x (0-1 normalized)
-        Math.random(), // y (0-1 normalized)
-        Math.random() * 0.1 - 0.05, // z (small depth values around 0)
-        Math.random() * 0.5 + 0.5, // visibility/confidence (0.5-1.0)
-      ]
-    );
-
-    // Face: 468 landmarks with [x, y, z]
-    const face: [number, number, number][] = Array.from({ length: 468 }, () => [
-      Math.random() * 0.3 + 0.35, // x (face region: 0.35-0.65)
-      Math.random() * 0.4 + 0.2, // y (face region: 0.2-0.6)
-      Math.random() * 0.01 - 0.005, // z (small depth values)
-    ]);
-
-    // Left hand: 21 landmarks with [x, y, z]
-    const left_hand: [number, number, number][] = Array.from(
-      { length: 21 },
-      () => [
-        Math.random() * 0.2 + 0.2, // x (left hand region: 0.2-0.4)
-        Math.random() * 0.3 + 0.4, // y (hand region: 0.4-0.7)
-        Math.random() * 0.02 - 0.01, // z (small depth values)
-      ]
-    );
-
-    // Right hand: 21 landmarks with [x, y, z]
-    const right_hand: [number, number, number][] = Array.from(
-      { length: 21 },
-      () => [
-        Math.random() * 0.2 + 0.6, // x (right hand region: 0.6-0.8)
-        Math.random() * 0.3 + 0.4, // y (hand region: 0.4-0.7)
-        Math.random() * 0.02 - 0.01, // z (small depth values)
-      ]
-    );
-
-    return {
-      pose,
-      face,
-      left_hand,
-      right_hand,
-    };
   };
 
   return (
@@ -355,42 +250,26 @@ export default function WebSocketTestComponent() {
           </div>
         </div>
 
-        {/* Demo Data Controls */}
+        {/* Demo Data Status */}
         <div className="mb-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Demo Data Controls
+            Demo Data Status
           </h3>
           <div className="p-4 bg-gray-50 rounded-lg space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">
-                  Load and use real keypoint data from demo files (126 frames
-                  from sign language video in OpenPose format)
+                  Real keypoint data from sign language video in OpenPose format ({demoKeypoints.length} frames loaded)
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Status:{" "}
                   {isLoadingDemo
-                    ? "Loading..."
+                    ? "Loading demo data..."
                     : demoLoaded
-                    ? `${demoKeypoints.length} frames loaded`
-                    : "Not loaded"}
-                  {demoLoaded &&
-                    ` | Current frame: ${currentFrameIndex + 1}/${
-                      demoKeypoints.length
-                    }`}
+                    ? `Ready - Current frame: ${currentFrameIndex + 1}/${demoKeypoints.length}`
+                    : "Failed to load"}
                 </p>
               </div>
-              <button
-                onClick={loadDemoKeypoints}
-                disabled={isLoadingDemo || demoLoaded}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isLoadingDemo
-                  ? "Loading..."
-                  : demoLoaded
-                  ? "Demo Loaded"
-                  : "Load Demo Data"}
-              </button>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -436,22 +315,24 @@ export default function WebSocketTestComponent() {
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600 mb-4">
               {demoLoaded
-                ? `Send keypoint data from loaded demo frames. Currently using real sign language data in OpenPose format (${demoKeypoints.length} frames).`
-                : "Test keypoint data transmission by sending randomly generated pose, face, and hand keypoints in MediaPipe format."}
+                ? `Send keypoint data from demo frames. Using real sign language data in OpenPose format (${demoKeypoints.length} frames).`
+                : isLoadingDemo
+                ? "Loading demo data... Please wait."
+                : "Failed to load demo data."}
             </p>
             <div className="flex flex-wrap gap-4 items-center">
               <button
                 onClick={handleSendTestKeypoints}
-                disabled={!isConnected}
+                disabled={!isConnected || !demoLoaded}
                 className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 {demoLoaded
                   ? "Send Next Demo Frame"
-                  : "Send Single Keypoint Set"}
+                  : "Demo Data Loading..."}
               </button>
               <button
                 onClick={isStreaming ? stopKeypointStream : startKeypointStream}
-                disabled={!isConnected}
+                disabled={!isConnected || !demoLoaded}
                 className={`px-6 py-2 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed ${
                   isStreaming
                     ? "bg-red-600 hover:bg-red-700"
@@ -465,15 +346,15 @@ export default function WebSocketTestComponent() {
               <div className="text-sm text-gray-500 space-y-1">
                 <div>
                   {demoLoaded
-                    ? `Using demo data: Frame ${currentFrameIndex + 1}/${
-                        demoKeypoints.length
-                      } (OpenPose format)`
-                    : "Generates: 33 pose (x,y,z,v) + 468 face (x,y,z) + 42 hand (x,y,z) landmarks (MediaPipe format)"}
+                    ? `Using demo data: Frame ${currentFrameIndex + 1}/${demoKeypoints.length} (OpenPose format)`
+                    : isLoadingDemo
+                    ? "Loading demo data..."
+                    : "Demo data required for keypoint transmission"}
                 </div>
                 <div className="text-xs">
                   {demoLoaded
                     ? "Real sign language keypoint data: 25 pose + 70 face + 42 hand landmarks (OpenPose 2D format)"
-                    : "~13.2KB per keypoint set vs ~50-100KB for video frame"}
+                    : "Load demo data to enable keypoint transmission with real sign language data"}
                 </div>
               </div>
             </div>
