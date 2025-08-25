@@ -76,11 +76,17 @@ export function useWebSocket({
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: IncomingMessage = JSON.parse(event.data);
+      console.log('WebSocket message received:', {
+        type: message.type,
+        timestamp: new Date().toISOString(),
+        messageSize: event.data.length
+      });
       setLastMessage(message);
 
       switch (message.type) {
         case "keypoints":
           setLastKeypointsData(message as KeypointsMessage);
+          console.log('Keypoints response processed');
           break;
         case "error":
           setLastError(message as ErrorMessage);
@@ -192,10 +198,18 @@ export function useWebSocket({
 
   const sendKeypoints = useCallback(
     (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => {
+      const seqId = sequenceId || `seq_${Date.now()}`;
+      console.log('Sending keypoints via WebSocket:', {
+        sequenceId: seqId,
+        format: format || "mediapipe",
+        timestamp: new Date().toISOString(),
+        keypointsSize: JSON.stringify(keypoints).length
+      });
+      
       sendMessage({
         type: "keypoint_sequence",
         keypoints,
-        sequence_id: sequenceId || `seq_${Date.now()}`,
+        sequence_id: seqId,
         format: format || "mediapipe",
       });
     },

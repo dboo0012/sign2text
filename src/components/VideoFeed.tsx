@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useMediapipeWebSocket } from "../hooks/useMediapipe";
 import { initMediapipe } from "../utils/mediapipe/mediapipe";
 import type { MediapipeController } from "../utils/mediapipe/mediapipe";
-
 
 interface VideoFeedProps {
   isRecording: boolean;
@@ -16,25 +16,108 @@ const VideoFeed = ({
 }: VideoFeedProps) => {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const [isPoseDetectionOn, setIsPoseDetectionOn] = useState(true);
+  const [isMediapipeConnected, setIsMediapipeConnected] = useState(false);
+  const [hasDetection, setHasDetection] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // keep track of Mediapipe
   const mediapipeController = useRef<MediapipeController | null>(null);
   const frameInterval = useRef<number | null>(null);
 
+  // Use the WebSocket hook for communication
+  const {
+    sendKeypoints,
+    lastResponse,
+    isConnected: isWebSocketConnected,
+    connect: connectWebSocket,
+    disconnect: disconnectWebSocket,
+  } = useMediapipeWebSocket({
+    autoConnect: false,
+  });
+
+  // MediaPipe result handler
+  const handleMediapipeResults = useCallback((results: any) => {
+    try {
+      console.log('Client extracted:', {
+        landmarks: results.landmarks,
+        keypoints: results,
+        timestamp: new Date().toISOString(),
+      });
+
+      setHasDetection(!!results.landmarks);
+
+      sendKeypoints(results.landmarks);
+      // Send keypoints if recording and connected
+      // if (results.landmarks && isRecording && isWebSocketConnected) {
+      //   console.log('Sending keypoints to backend...');
+      //   sendKeypoints(results.landmarks);
+      // } else if (results.landmarks && (!isRecording || !isWebSocketConnected)) {
+      //   console.log('Keypoints detected but not sent:', {
+      //     reason: !isRecording ? 'Not recording' : 'WebSocket not connected',
+      //     isRecording,
+      //     isWebSocketConnected,
+      //   });
+      // }
+    } catch (error) {
+      console.error("Failed to process MediaPipe results:", error);
+    }
+  }, [isRecording, isWebSocketConnected, sendKeypoints]);
+
+  // Initialize MediaPipe
+  const initializeMediapipe = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || mediapipeController.current) {
+      return;
+    }
+
+    try {
+      console.log('Initializing MediaPipe...');
+      setIsMediapipeConnected(false);
+      
+      mediapipeController.current = await initMediapipe(
+        videoRef.current,
+        canvasRef.current,
+        handleMediapipeResults
+      );
+
+      console.log('MediaPipe initialized successfully');
+      setIsMediapipeConnected(true);
+
+      // Start frame processing
+      frameInterval.current = setInterval(() => {
+        if (mediapipeController.current) {
+          mediapipeController.current.sendFrame();
+        }
+      }, 1000 / 30); // 30 FPS
+
+    } catch (error) {
+      console.error('Failed to initialize MediaPipe:', error);
+      setIsMediapipeConnected(false);
+    }
+  }, [handleMediapipeResults]);
+
+  // Cleanup MediaPipe
+  const cleanupMediapipe = useCallback(() => {
+    if (frameInterval.current) {
+      clearInterval(frameInterval.current);
+      frameInterval.current = null;
+    }
+    if (mediapipeController.current) {
+      mediapipeController.current.close();
+      mediapipeController.current = null;
+    }
+    setIsMediapipeConnected(false);
+    setHasDetection(false);
+  }, []);
+
   useEffect(() => {
     if (isCameraOn) {
-      startCamera().then(setupMediapipe);
+      startCamera();
     } else {
       stopCamera();
-      cleanupMediapipe();
     }
     // cleanup when component unmounts
     return () => {
       stopCamera();
-      cleanupMediapipe();
     };
   }, [isCameraOn]);
 
@@ -46,6 +129,7 @@ const VideoFeed = ({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+      connectWebSocket();
     } catch (error) {
       console.error("Error accessing camera:", error);
       setIsCameraOn(false);
@@ -61,38 +145,39 @@ const VideoFeed = ({
       tracks.forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
-  };
-
-  const setupMediapipe = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    mediapipeController.current = await initMediapipe(
-      videoRef.current,
-      canvasRef.current,
-      (results) => {
-        // 🔴 Here you receive Mediapipe landmarks each frame
-        console.log("Hand landmarks:", results.landmarks);
-        // Later: send to backend / ML model
-      }
-    );
-
-    // Call sendFrame repeatedly (~30 FPS)
-    frameInterval.current = window.setInterval(() => {
-      mediapipeController.current?.sendFrame();
-    }, 1000 / 30);
-  };
-
-  const cleanupMediapipe = () => {
-    if (frameInterval.current) {
-      clearInterval(frameInterval.current);
-      frameInterval.current = null;
-    }
-    mediapipeController.current?.close();
-    mediapipeController.current = null;
+    disconnectWebSocket();
   };
 
   const toggleCamera = () => setIsCameraOn((prev) => !prev);
   const togglePoseDetection = () => setIsPoseDetectionOn((prev) => !prev);
+
+  // Handle MediaPipe connection when camera and pose detection state changes
+  useEffect(() => {
+    if (isCameraOn && isPoseDetectionOn) {
+      initializeMediapipe();
+    } else {
+      cleanupMediapipe();
+    }
+  }, [isCameraOn, isPoseDetectionOn, initializeMediapipe, cleanupMediapipe]);
+
+  // Handle WebSocket responses
+  useEffect(() => {
+    if (lastResponse) {
+      console.log("video feed", lastResponse)
+    }
+  }, [lastResponse]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cleanupMediapipe();
+    };
+  }, [cleanupMediapipe]);
+
+  const reconnectWebSocket = () => {
+    disconnectWebSocket();
+    setTimeout(() => connectWebSocket(), 100);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -135,10 +220,10 @@ const VideoFeed = ({
 
         {/* Pose Detection Toggle */}
         {isCameraOn && (
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 space-y-2">
             <button
               onClick={togglePoseDetection}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors block ${
                 isPoseDetectionOn
                   ? "bg-blue-600 text-white"
                   : "bg-gray-600 text-gray-300"
@@ -146,6 +231,41 @@ const VideoFeed = ({
             >
               {isPoseDetectionOn ? "Pose ON" : "Pose OFF"}
             </button>
+            
+            {/* WebSocket Status */}
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors block ${
+                isWebSocketConnected
+                  ? "bg-green-600 text-white"
+                  : "bg-red-600 text-white"
+              }`}
+            >
+              WebSocket: {isWebSocketConnected ? "Connected" : "Disconnected"}
+            </div>
+
+            {/* MediaPipe Status */}
+            {isPoseDetectionOn && (
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors block ${
+                  isMediapipeConnected
+                    ? "bg-green-600 text-white"
+                    : "bg-red-600 text-white"
+                }`}
+              >
+                {isMediapipeConnected ? "MediaPipe ON" : "MediaPipe OFF"}
+              </div>
+            )}
+
+            {/* Keypoints Detection Indicator */}
+            {isPoseDetectionOn && isMediapipeConnected && (
+              <div
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors block ${
+                  hasDetection ? "bg-yellow-600 text-white animate-pulse" : "bg-gray-600 text-gray-300"
+                }`}
+              >
+                {hasDetection ? "Detecting" : "No Detection"}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -177,6 +297,17 @@ const VideoFeed = ({
           >
             <span className="text-lg">{isRecording ? "⏹️" : "▶️"}</span>
             <span>{isRecording ? "Stop Recording" : "Start Recording"}</span>
+          </button>
+        )}
+
+        {/* Reconnect Button (show if camera is on but WebSocket not connected) */}
+        {isCameraOn && !isWebSocketConnected && (
+          <button
+            onClick={reconnectWebSocket}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium bg-yellow-600 text-white hover:bg-yellow-700 transition-colors"
+          >
+            <span className="text-lg">🔄</span>
+            <span>Reconnect WebSocket</span>
           </button>
         )}
       </div>
