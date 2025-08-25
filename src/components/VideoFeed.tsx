@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { initMediapipe } from "../utils/mediapipe";
-import type { MediapipeController } from "../utils/mediapipe";
+import { initMediapipe } from "../utils/mediapipe/mediapipe";
+import type { MediapipeController } from "../utils/mediapipe/mediapipe";
 
 
 interface VideoFeedProps {
