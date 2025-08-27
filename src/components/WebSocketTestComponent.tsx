@@ -64,7 +64,9 @@ export default function WebSocketTestComponent() {
         const openPoseDataArray = await loadDemoOpenPoseData();
         setDemoKeypoints(openPoseDataArray);
         setDemoLoaded(true);
-        console.log(`Loaded ${openPoseDataArray.length} OpenPose data frames from demo data`);
+        console.log(
+          `Loaded ${openPoseDataArray.length} OpenPose data frames from demo data`
+        );
       } catch (error) {
         console.error("Failed to load demo OpenPose data:", error);
       } finally {
@@ -259,14 +261,17 @@ export default function WebSocketTestComponent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">
-                  Real keypoint data from sign language video in OpenPose format ({demoKeypoints.length} frames loaded)
+                  Real keypoint data from sign language video in OpenPose format
+                  ({demoKeypoints.length} frames loaded)
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Status:{" "}
                   {isLoadingDemo
                     ? "Loading demo data..."
                     : demoLoaded
-                    ? `Ready - Current frame: ${currentFrameIndex + 1}/${demoKeypoints.length}`
+                    ? `Ready - Current frame: ${currentFrameIndex + 1}/${
+                        demoKeypoints.length
+                      }`
                     : "Failed to load"}
                 </p>
               </div>
@@ -326,9 +331,7 @@ export default function WebSocketTestComponent() {
                 disabled={!isConnected || !demoLoaded}
                 className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {demoLoaded
-                  ? "Send Next Demo Frame"
-                  : "Demo Data Loading..."}
+                {demoLoaded ? "Send Next Demo Frame" : "Demo Data Loading..."}
               </button>
               <button
                 onClick={isStreaming ? stopKeypointStream : startKeypointStream}
@@ -346,7 +349,9 @@ export default function WebSocketTestComponent() {
               <div className="text-sm text-gray-500 space-y-1">
                 <div>
                   {demoLoaded
-                    ? `Using demo data: Frame ${currentFrameIndex + 1}/${demoKeypoints.length} (OpenPose format)`
+                    ? `Using demo data: Frame ${currentFrameIndex + 1}/${
+                        demoKeypoints.length
+                      } (OpenPose format)`
                     : isLoadingDemo
                     ? "Loading demo data..."
                     : "Demo data required for keypoint transmission"}
@@ -422,14 +427,14 @@ export default function WebSocketTestComponent() {
                   </ul>
                 </div>
               )}
-              {lastKeypointsData.data.keypoints && (
+              {/* {lastKeypointsData.data.keypoints && (
                 <div>
                   <p>
                     <strong>Keypoints:</strong>
                   </p>
                   <ul className="ml-4 space-y-1">
                     <li>
-                      Pose points:{" "}
+                        Pose points:{" "}
                       {lastKeypointsData.data.keypoints.pose?.length || 0}
                     </li>
                     <li>
@@ -446,7 +451,7 @@ export default function WebSocketTestComponent() {
                     </li>
                   </ul>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         )}

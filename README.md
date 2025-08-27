@@ -8,10 +8,8 @@ WASL Sign Language Recognition interface authored by Team MCS12 - FIT3162.
 
 - **Typescript** - Primary frontend programming language
 - **React** - Main UI framework
-- **MediaPipe** - Real-time pose and hand tracking
 - **Web Workers** - Non-blocking pose estimation processing
-- **TailwindCSS** - Styling components
-- **MediapipeJS** - Pose estimator library for JS client 
+- **TailwindCSS** - Styling components 
 
 ## Backend
 

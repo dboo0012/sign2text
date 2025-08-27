@@ -6,7 +6,6 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
-  Keypoints,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 
@@ -24,7 +23,7 @@ interface UseWebSocketReturn {
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
-  sendKeypoints: (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => void;
+  sendKeypoints: (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => void;
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;
@@ -197,11 +196,11 @@ export function useWebSocket({
   }, []);
 
   const sendKeypoints = useCallback(
-    (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => {
+    (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => {
       const seqId = sequenceId || `seq_${Date.now()}`;
       console.log('Sending keypoints via WebSocket:', {
         sequenceId: seqId,
-        format: format || "mediapipe",
+        format: format || "openpose",
         timestamp: new Date().toISOString(),
         keypointsSize: JSON.stringify(keypoints).length
       });
@@ -210,7 +209,7 @@ export function useWebSocket({
         type: "keypoint_sequence",
         keypoints,
         sequence_id: seqId,
-        format: format || "mediapipe",
+        format: format || "openpose",
       });
     },
     [sendMessage]

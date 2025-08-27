@@ -6,7 +6,6 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
-  Keypoints,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 
@@ -17,9 +16,9 @@ interface WebSocketContextType {
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
   sendKeypoints: (
-    keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData,
+    keypoints: OpenPoseKeypoints | OpenPoseData,
     sequenceId?: string,
-    format?: "mediapipe" | "openpose" | "openpose_raw"
+    format?: "openpose" | "openpose_raw"
   ) => void;
   connect: () => void;
   disconnect: () => void;
