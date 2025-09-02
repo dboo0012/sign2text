@@ -1,78 +1,78 @@
-import { useState } from 'react'
+import { useState } from "react";
 
 interface TranslationCardProps {
-  translation: string
-  selectedLanguage: string
+  translation: string;
+  selectedLanguage: string;
 }
 
 const languageNames: { [key: string]: string } = {
-  'en': 'English',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'zh': 'Chinese'
-}
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  zh: "Chinese",
+};
 
 const TranslationCard = ({
   translation,
-  selectedLanguage
+  selectedLanguage,
 }: TranslationCardProps) => {
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [copySuccess, setCopySuccess] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleTextToSpeech = () => {
-    if (!translation) return
-    
-    setIsSpeaking(true)
-    const utterance = new SpeechSynthesisUtterance(translation)
-    utterance.lang = selectedLanguage === 'zh' ? 'zh-CN' : selectedLanguage
-    
+    if (!translation) return;
+
+    setIsSpeaking(true);
+    const utterance = new SpeechSynthesisUtterance(translation);
+    utterance.lang = selectedLanguage === "en" ? "en" : selectedLanguage;
+
     utterance.onend = () => {
-      setIsSpeaking(false)
-    }
-    
+      setIsSpeaking(false);
+    };
+
     utterance.onerror = () => {
-      setIsSpeaking(false)
-    }
-    
-    speechSynthesis.speak(utterance)
-  }
+      setIsSpeaking(false);
+    };
+
+    speechSynthesis.speak(utterance);
+  };
 
   const handleCopyToClipboard = async () => {
-    if (!translation) return
-    
+    if (!translation) return;
+
     try {
-      await navigator.clipboard.writeText(translation)
-      setCopySuccess(true)
-      setTimeout(() => setCopySuccess(false), 2000)
+      await navigator.clipboard.writeText(translation);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
+      console.error("Failed to copy to clipboard:", error);
     }
-  }
+  };
 
   const handleShare = async () => {
-    if (!translation) return
-    
+    if (!translation) return;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Sign Language Translation',
+          title: "Sign Language Translation",
           text: `Translated: "${translation}"`,
-        })
+        });
       } catch (error) {
-        console.error('Failed to share:', error)
+        console.error("Failed to share:", error);
       }
     } else {
       // Fallback: copy to clipboard
-      handleCopyToClipboard()
+      handleCopyToClipboard();
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">Translation</h3>
-        
+
         {translation ? (
           <div className="space-y-4">
             {/* Translation Text */}
@@ -95,13 +95,13 @@ const TranslationCard = ({
                 disabled={isSpeaking}
                 className={`flex flex-col items-center space-y-1 p-3 rounded-lg border transition-colors ${
                   isSpeaking
-                    ? 'bg-blue-100 border-blue-300 text-blue-700'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                    ? "bg-blue-100 border-blue-300 text-blue-700"
+                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <span className="text-xl">{isSpeaking ? '🔊' : '🔊'}</span>
+                <span className="text-xl">{isSpeaking ? "🔊" : "🔊"}</span>
                 <span className="text-xs font-medium">
-                  {isSpeaking ? 'Speaking...' : 'Speak'}
+                  {isSpeaking ? "Speaking..." : "Speak"}
                 </span>
               </button>
 
@@ -110,13 +110,13 @@ const TranslationCard = ({
                 onClick={handleCopyToClipboard}
                 className={`flex flex-col items-center space-y-1 p-3 rounded-lg border transition-colors ${
                   copySuccess
-                    ? 'bg-green-100 border-green-300 text-green-700'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                    ? "bg-green-100 border-green-300 text-green-700"
+                    : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <span className="text-xl">{copySuccess ? '✅' : '📋'}</span>
+                <span className="text-xl">{copySuccess ? "✅" : "📋"}</span>
                 <span className="text-xs font-medium">
-                  {copySuccess ? 'Copied!' : 'Copy'}
+                  {copySuccess ? "Copied!" : "Copy"}
                 </span>
               </button>
 
@@ -147,7 +147,7 @@ const TranslationCard = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TranslationCard 
+export default TranslationCard;
