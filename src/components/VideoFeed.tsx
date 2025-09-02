@@ -1,150 +1,44 @@
-//IMPLEMENTATION 1 WORKING NO ISSUES
-
-// import { useEffect, useRef, useState } from "react"
-// import { useWebSocketContext } from "../contexts/websocketContext"
-
-// interface VideoFeedProps {
-//   isRecording: boolean
-//   onStartRecording: () => void
-//   onStopRecording: () => void
-// }
-
-// const VideoFeed = ()=> {
-//   const [isCameraOn, setIsCameraOn] = useState(false)
-//   const videoRef = useRef<HTMLVideoElement>(null)
-//   const canvasRef = useRef<HTMLCanvasElement>(null)
-
-//   // 🔹 Use your context instead of hook directly
-//   const { isConnected, sendMessage } = useWebSocketContext()
-
-//   useEffect(() => {
-//     if (isCameraOn) {
-//       startCamera()
-//     } else {
-//       stopCamera()
-//     }
-//   }, [isCameraOn])
-
-//   const startCamera = async () => {
-//     try {
-//       const stream = await navigator.mediaDevices.getUserMedia({
-//         video: { width: 640, height: 480 }
-//       })
-//       if (videoRef.current) {
-//         videoRef.current.srcObject = stream
-//       }
-//     } catch (err) {
-//       console.error("Error accessing camera:", err)
-//       alert("Camera not found. Please check permissions.")
-//     }
-//   }
-
-//   const stopCamera = () => {
-//     if (videoRef.current && videoRef.current.srcObject) {
-//       const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
-//       tracks.forEach(track => track.stop())
-//       videoRef.current.srcObject = null
-//     }
-//   }
-
-//   // 🔹 Capture & send frames over WebSocket
-//   useEffect(() => {
-//     if (!isCameraOn || !isConnected) return
-
-//     const interval = setInterval(() => {
-//       if (!videoRef.current || !canvasRef.current) return
-
-//       const ctx = canvasRef.current.getContext("2d")
-//       if (!ctx) return
-
-//       ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height)
-
-//       canvasRef.current.toBlob(
-//         (blob) => {
-//           if (blob) {
-//             blob.arrayBuffer().then((buffer) => {
-//               // Send as binary frame message
-//               sendMessage({
-//                 type: "frame",
-//                 data: Array.from(new Uint8Array(buffer)), // serialize
-//               })
-//             })
-//           }
-//         },
-//         "image/jpeg",
-//         0.6 // compression quality
-//       )
-//     }, 150) // ~10 FPS
-
-//     return () => clearInterval(interval)
-//   }, [isCameraOn, isConnected, sendMessage])
-
-//   return (
-//     <div className="flex flex-col h-full">
-//       {/* Video Preview */}
-//       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-
-//       {/* Hidden canvas for extracting frames */}
-//       <canvas ref={canvasRef} width={640} height={480} className="hidden" />
-
-//       <div className="flex mt-4 space-x-4">
-//         <button
-//           onClick={() => setIsCameraOn(!isCameraOn)}
-//           className="px-4 py-2 bg-blue-600 text-white rounded"
-//         >
-//           {isCameraOn ? "Stop Camera" : "Start Camera"}
-//         </button>
-//       </div>
-//     </div>
-//   )
-// }
-
-// export default VideoFeed
-
-
-
-// IMPLEMENTATION 2 WORKING WITH ISSUES
-import { useState, useRef, useEffect } from "react"
-import { useWebSocketContext } from "../contexts/websocketContext"
+import { useState, useRef, useEffect } from "react";
+import { useWebSocketContext } from "../contexts/websocketContext";
 
 interface VideoFeedProps {
-  isRecording: boolean
-  onStartRecording: () => void
-  onStopRecording: () => void
+  isRecording: boolean;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
 }
 
 const VideoFeed = ({
   isRecording,
   onStartRecording,
-  onStopRecording
+  onStopRecording,
 }: VideoFeedProps) => {
-  const [isCameraOn, setIsCameraOn] = useState(false)
-  const [isPoseDetectionOn, setIsPoseDetectionOn] = useState(true)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isPoseDetectionOn, setIsPoseDetectionOn] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ✅ Pull values from WebSocket context
-  const { isConnected, sendMessage } = useWebSocketContext()
+  const { isConnected, sendMessage } = useWebSocketContext();
 
   // 🎥 Handle camera toggle
   useEffect(() => {
     if (isCameraOn) {
-      startCamera()
+      startCamera();
     } else {
-      stopCamera()
+      stopCamera();
     }
-  }, [isCameraOn])
+  }, [isCameraOn]);
 
   // 📡 Send frames while recording
   useEffect(() => {
-    if (!isRecording || !isConnected) return
+    if (!isRecording || !isConnected) return;
 
-    console.log("📡 Started sending frames...")
+    console.log("📡 Started sending frames...");
 
     const interval = setInterval(() => {
-      if (!videoRef.current || !canvasRef.current) return
-      const ctx = canvasRef.current.getContext("2d")
-      if (!ctx) return
+      if (!videoRef.current || !canvasRef.current) return;
+      const ctx = canvasRef.current.getContext("2d");
+      if (!ctx) return;
 
       ctx.drawImage(
         videoRef.current,
@@ -152,62 +46,62 @@ const VideoFeed = ({
         0,
         canvasRef.current.width,
         canvasRef.current.height
-      )
+      );
 
       canvasRef.current.toBlob(
         (blob) => {
           if (blob) {
             blob.arrayBuffer().then((buffer) => {
-              sendMessage(
-                {
+              sendMessage({
                 type: "frame",
-                data: Array.from(new Uint8Array(buffer)) // serialize binary → array
-              }
-              )
-            })
+                data: Array.from(new Uint8Array(buffer)), // serialize binary → array
+              });
+            });
           }
         },
         "image/jpeg",
         0.6
-      )
-    }, 150) // ~10 FPS
+      );
+    }, 150); // ~10 FPS
 
     return () => {
-      clearInterval(interval)
-      console.log("🛑 Stopped sending frames")
-    }
-  }, [isRecording, isConnected, sendMessage])
+      clearInterval(interval);
+      console.log("🛑 Stopped sending frames");
+    };
+  }, [isRecording, isConnected, sendMessage]);
 
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }
-      })
+        video: { width: 640, height: 480 },
+      });
       if (videoRef.current) {
-        videoRef.current.srcObject = stream
+        videoRef.current.srcObject = stream;
       }
     } catch (error) {
-      console.error("Error accessing camera:", error)
-      setIsCameraOn(false)
-      alert("Camera not found. Please check your camera permissions and try again.")
+      console.error("Error accessing camera:", error);
+      setIsCameraOn(false);
+      alert(
+        "Camera not found. Please check your camera permissions and try again."
+      );
     }
-  }
+  };
 
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks()
-      tracks.forEach(track => track.stop())
-      videoRef.current.srcObject = null
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
-  }
+  };
 
   const toggleCamera = () => {
-    setIsCameraOn(!isCameraOn)
-  }
+    setIsCameraOn(!isCameraOn);
+  };
 
   const togglePoseDetection = () => {
-    setIsPoseDetectionOn(!isPoseDetectionOn)
-  }
+    setIsPoseDetectionOn(!isPoseDetectionOn);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -225,6 +119,8 @@ const VideoFeed = ({
         {isPoseDetectionOn && (
           <canvas
             ref={canvasRef}
+            width={640}
+            height={480}
             className="absolute top-0 left-0 w-full h-full pointer-events-none"
           />
         )}
@@ -296,7 +192,7 @@ const VideoFeed = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default VideoFeed
+export default VideoFeed;
