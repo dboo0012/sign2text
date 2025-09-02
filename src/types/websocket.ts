@@ -1,4 +1,3 @@
-// types/websocket.ts
 import type { OpenPoseKeypoints, OpenPoseData } from "./pose";
 
 export interface FrameInfo {
@@ -61,8 +60,26 @@ export interface ErrorMessage extends WebSocketMessage {
   message: string;
 }
 
-export type IncomingMessage = KeypointsMessage | PongMessage | ErrorMessage;
-export type OutgoingMessage = PingMessage | KeypointSequenceMessage;
+/**
+ * 🔹 New: Frame message for sending video frames
+ */
+export interface FrameMessage extends WebSocketMessage {
+  type: "frame";
+  data: number[]; // serialized image bytes (Uint8Array → number[])
+  width?: number; // optional metadata
+  height?: number;
+  format?: "jpeg" | "webp" | "png";
+}
+
+export type IncomingMessage =
+  | KeypointsMessage
+  | PongMessage
+  | ErrorMessage;
+
+export type OutgoingMessage =
+  | PingMessage
+  | KeypointSequenceMessage
+  | FrameMessage;
 
 export const WebSocketConnectionState = {
   CONNECTING: "CONNECTING",
