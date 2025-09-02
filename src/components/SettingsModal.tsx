@@ -15,7 +15,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     soundEnabled: true,
     saveHistory: true,
     darkMode: false,
-    gestureTimeout: 3,
+    gestureTimeout: 999,
     smoothingFactor: 5
   })
 
@@ -40,7 +40,7 @@ const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
       soundEnabled: true,
       saveHistory: true,
       darkMode: false,
-      gestureTimeout: 3,
+      gestureTimeout: 999,
       smoothingFactor: 5
     }
     setSettings(defaultSettings)

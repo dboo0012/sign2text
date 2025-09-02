@@ -181,6 +181,9 @@ export function useWebSocket({
           ...message,
           timestamp: message.timestamp || Date.now() / 1000,
         };
+        if (message instanceof ArrayBuffer || message instanceof Blob || message instanceof Uint8Array){
+          wsRef.current.send(message)
+        }
         wsRef.current.send(JSON.stringify(messageWithTimestamp));
       } catch (error) {
         console.error("Failed to send WebSocket message:", error);
