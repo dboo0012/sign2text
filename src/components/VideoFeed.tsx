@@ -356,10 +356,12 @@ const VideoFeed = ({
         (blob) => {
           if (blob) {
             blob.arrayBuffer().then((buffer) => {
-              sendMessage({
+              sendMessage(
+                {
                 type: "frame",
                 data: Array.from(new Uint8Array(buffer)) // serialize binary → array
-              })
+              }
+              )
             })
           }
         },
