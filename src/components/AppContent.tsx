@@ -8,14 +8,14 @@ import type { Translation } from "../types/translation";
 const AppContent = () => {
   const { isConnected } = useWebSocketContext();
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("es");
+  const [selectedLanguage, setSelectedLanguage] = useState("ms");
   const [currentSign, setCurrentSign] = useState<{
     sign: string;
     confidence: number;
   } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTestComponent, setShowTestComponent] = useState(false);
-  const [translations, setTranslations] = useState<Translation[]>([
+  const [translations, _setTranslations] = useState<Translation[]>([
     {
       id: "1",
       originalSign: "Hello",

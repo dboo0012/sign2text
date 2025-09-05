@@ -1,8 +1,8 @@
 import VideoFeed from "./VideoFeed";
-import StatusCard from "./StatusCard";
+// import StatusCard from "./StatusCard";
 import RecognitionCard from "./RecognitionCard";
 import TranslationCard from "./TranslationCard";
-import HistoryCard from "./HistoryCard";
+// import HistoryCard from "./HistoryCard";
 import WebSocketTestComponent from "./WebSocketTestComponent";
 import DemoKeypointTester from "./DemoKeypointTester";
 import type { Translation } from "../types/translation";
@@ -18,7 +18,7 @@ interface MainContentProps {
     sign: string;
     confidence: number;
   } | null;
-  translations: Translation[];
+  translations: Translation[]; // Currently commented out
   onTranslationReceived?: (translation: string, confidence: number) => void;
 }
 
@@ -30,9 +30,10 @@ const MainContent = ({
   selectedLanguage,
   onLanguageChange,
   currentSign,
-  translations,
+  translations, // Currently not used but kept for future
   onTranslationReceived,
 }: MainContentProps) => {
+  void translations; // Suppress unused variable warning
   if (showTestComponent) {
     return <WebSocketTestComponent />;
   }
@@ -55,11 +56,6 @@ const MainContent = ({
 
       {/* Right Panel - Information Section */}
       <div className="bg-gray-50 p-6 space-y-6 overflow-y-auto">
-        <StatusCard
-          selectedLanguage={selectedLanguage}
-          onLanguageChange={onLanguageChange}
-        />
-
         <RecognitionCard
           currentSign={currentSign}
           isRecording={isRecording}
@@ -69,11 +65,12 @@ const MainContent = ({
         <TranslationCard
           recognizedText={currentSign?.sign || ""}
           selectedLanguage={selectedLanguage}
+          onLanguageChange={onLanguageChange}
         />
 
         <DemoKeypointTester />
 
-        <HistoryCard translations={translations} />
+        {/* <HistoryCard translations={translations} /> */}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import type { Translation } from "../types/translation";
 export const useAppState = () => {
   const { isConnected } = useWebSocketContext();
   const [isRecording, setIsRecording] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("es");
+  const [selectedLanguage, setSelectedLanguage] = useState("ms");
   const [currentSign, setCurrentSign] = useState<{
     sign: string;
     confidence: number;

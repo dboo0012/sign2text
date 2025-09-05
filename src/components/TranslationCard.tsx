@@ -1,25 +1,56 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { translateText } from "../utils/openai/openai";
 import { useWebSocketContext } from "../contexts/websocketContext";
+import { MODEL_DISPLAY_NAMES, MODELS } from "../types/models";
+import ReactCountryFlag from "react-country-flag";
 
 interface TranslationCardProps {
   recognizedText: string; // Text from props (fallback)
   selectedLanguage: string;
+  onLanguageChange: (language: string) => void;
 }
 
 const languageNames: { [key: string]: string } = {
   en: "English",
+  ms: "Bahasa Malaysia",
   es: "Spanish",
   fr: "French",
   de: "German",
   zh: "Chinese",
-  ms: "Malay",
   ar: "Arabic",
+  ja: "Japanese",
+  ko: "Korean",
+  th: "Thai",
+  vi: "Vietnamese",
+  id: "Indonesian",
+  pt: "Portuguese",
+  it: "Italian",
+  ru: "Russian",
 };
+
+// Language options with country codes for flags
+const languages = [
+  { code: "ms", name: "Bahasa Malaysia", countryCode: "MY" },
+  { code: "en", name: "English", countryCode: "US" },
+  { code: "es", name: "Spanish", countryCode: "ES" },
+  { code: "fr", name: "French", countryCode: "FR" },
+  { code: "de", name: "German", countryCode: "DE" },
+  { code: "zh", name: "Chinese", countryCode: "CN" },
+  { code: "ar", name: "Arabic", countryCode: "SA" },
+  { code: "ja", name: "Japanese", countryCode: "JP" },
+  { code: "ko", name: "Korean", countryCode: "KR" },
+  { code: "th", name: "Thai", countryCode: "TH" },
+  { code: "vi", name: "Vietnamese", countryCode: "VN" },
+  { code: "id", name: "Indonesian", countryCode: "ID" },
+  { code: "pt", name: "Portuguese", countryCode: "PT" },
+  { code: "it", name: "Italian", countryCode: "IT" },
+  { code: "ru", name: "Russian", countryCode: "RU" },
+];
 
 const TranslationCard = ({
   recognizedText,
   selectedLanguage,
+  onLanguageChange,
 }: TranslationCardProps) => {
   const { lastMessage } = useWebSocketContext();
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -28,6 +59,8 @@ const TranslationCard = ({
   const [translatedText, setTranslatedText] = useState<string>("");
   const [isTranslating, setIsTranslating] = useState(false);
   const [webSocketText, setWebSocketText] = useState<string>("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Track last translated text to avoid redundant API calls
   const lastTranslatedRef = useRef<{
@@ -146,6 +179,23 @@ const TranslationCard = ({
     }
   }, [translationEnabled]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const handleTextToSpeech = () => {
     if (!displayText) return;
 
@@ -211,6 +261,84 @@ const TranslationCard = ({
           >
             {translationEnabled ? "Translation On" : "Translation Off"}
           </button>
+        </div>
+
+        {/* Language Selection */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Target Language
+          </label>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <ReactCountryFlag
+                  countryCode={languages.find((lang) => lang.code === selectedLanguage)?.countryCode || "US"}
+                  svg
+                  style={{
+                    width: '1.2em',
+                    height: '1.2em',
+                  }}
+                />
+                <span>{languages.find((lang) => lang.code === selectedLanguage)?.name || "Select Language"}</span>
+              </div>
+              <svg
+                className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      onLanguageChange(lang.code);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 ${
+                      selectedLanguage === lang.code ? 'bg-blue-50 text-blue-900' : ''
+                    }`}
+                  >
+                    <ReactCountryFlag
+                      countryCode={lang.countryCode}
+                      svg
+                      style={{
+                        width: '1.2em',
+                        height: '1.2em',
+                      }}
+                    />
+                    <span>{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Current Selection Display */}
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span>Currently translating to:</span>
+            <div className="flex items-center space-x-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
+              <ReactCountryFlag
+                countryCode={languages.find((lang) => lang.code === selectedLanguage)?.countryCode || "US"}
+                svg
+                style={{
+                  width: '1em',
+                  height: '1em',
+                }}
+              />
+              <span className="font-medium">
+                {languageNames[selectedLanguage] || selectedLanguage}
+              </span>
+            </div>
+          </div>
         </div>
 
         {currentRecognizedText ? (
@@ -285,15 +413,12 @@ const TranslationCard = ({
               </button>
             </div>
 
-            {/* Translation Quality */}
-            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+            {/* Model Information */}
+            <div className="flex items-center justify-center text-xs text-gray-500 pt-2 border-t border-gray-100">
               <span>
                 {translationEnabled
-                  ? "Translation quality: High"
-                  : "Direct recognition"}
-              </span>
-              <span>
-                {translationEnabled ? "Source: OpenAI API" : "WebSocket Server"}
+                  ? `Model: ${MODEL_DISPLAY_NAMES[MODELS.OPENAI]}`
+                  : `Model: ${MODEL_DISPLAY_NAMES[MODELS.SLR]}`}
               </span>
             </div>
           </div>
