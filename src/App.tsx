@@ -55,39 +55,37 @@ function App() {
 
   const handleStartRecording = () => {
     setIsRecording(true);
-    // Simulate recognition after 2 seconds
-    setTimeout(() => {
-      setCurrentSign({
-        sign: "Hello I Want to tell you something",
-        confidence: 89,
-      });
-      setCurrentTranslation("Hola");
-      setIsRecording(false);
-    }, 2000);
+    // Remove automatic stop - let user control recording manually
   };
 
   const handleStopRecording = () => {
     setIsRecording(false);
+    // Only set recognition results when user manually stops recording
+    setCurrentSign({
+      sign: "Hello I Want to tell you something",
+      confidence: 89,
+    });
+    setCurrentTranslation("Hola");
   };
 
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
   };
 
-  const handleAddTranslation = (
-    sign: string,
-    translation: string,
-    confidence: number
-  ) => {
-    const newTranslation: Translation = {
-      id: Date.now().toString(),
-      originalSign: sign,
-      translatedText: translation,
-      timestamp: new Date(),
-      confidence,
-    };
-    setTranslations((prev) => [newTranslation, ...prev.slice(0, 9)]); // Keep last 10
-  };
+  // const handleAddTranslation = (
+  //   sign: string,
+  //   translation: string,
+  //   confidence: number
+  // ) => {
+  //   const newTranslation: Translation = {
+  //     id: Date.now().toString(),
+  //     originalSign: sign,
+  //     translatedText: translation,
+  //     timestamp: new Date(),
+  //     confidence,
+  //   };
+  //   setTranslations((prev) => [newTranslation, ...prev.slice(0, 9)]); // Keep last 10
+  // };
 
   return (
     <WebSocketProvider
