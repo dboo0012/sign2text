@@ -182,17 +182,20 @@ const TranslationCard = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
     if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
 
@@ -266,7 +269,7 @@ const TranslationCard = ({
         {/* Language Selection */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Target Language
+            Language:
           </label>
           <div className="relative" ref={dropdownRef}>
             <button
@@ -275,22 +278,35 @@ const TranslationCard = ({
             >
               <div className="flex items-center space-x-2">
                 <ReactCountryFlag
-                  countryCode={languages.find((lang) => lang.code === selectedLanguage)?.countryCode || "US"}
+                  countryCode={
+                    languages.find((lang) => lang.code === selectedLanguage)
+                      ?.countryCode || "US"
+                  }
                   svg
                   style={{
-                    width: '1.2em',
-                    height: '1.2em',
+                    width: "1.2em",
+                    height: "1.2em",
                   }}
                 />
-                <span>{languages.find((lang) => lang.code === selectedLanguage)?.name || "Select Language"}</span>
+                <span>
+                  {languages.find((lang) => lang.code === selectedLanguage)
+                    ?.name || "Select Language"}
+                </span>
               </div>
               <svg
-                className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-transform ${
+                  isDropdownOpen ? "rotate-180" : ""
+                }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
@@ -304,15 +320,17 @@ const TranslationCard = ({
                       setIsDropdownOpen(false);
                     }}
                     className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center space-x-2 ${
-                      selectedLanguage === lang.code ? 'bg-blue-50 text-blue-900' : ''
+                      selectedLanguage === lang.code
+                        ? "bg-blue-50 text-blue-900"
+                        : ""
                     }`}
                   >
                     <ReactCountryFlag
                       countryCode={lang.countryCode}
                       svg
                       style={{
-                        width: '1.2em',
-                        height: '1.2em',
+                        width: "1.2em",
+                        height: "1.2em",
                       }}
                     />
                     <span>{lang.name}</span>
@@ -320,24 +338,6 @@ const TranslationCard = ({
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Current Selection Display */}
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>Currently translating to:</span>
-            <div className="flex items-center space-x-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-md">
-              <ReactCountryFlag
-                countryCode={languages.find((lang) => lang.code === selectedLanguage)?.countryCode || "US"}
-                svg
-                style={{
-                  width: '1em',
-                  height: '1em',
-                }}
-              />
-              <span className="font-medium">
-                {languageNames[selectedLanguage] || selectedLanguage}
-              </span>
-            </div>
           </div>
         </div>
 
