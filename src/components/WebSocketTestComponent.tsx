@@ -450,31 +450,6 @@ export default function WebSocketTestComponent() {
                     </ul>
                   </div>
                 )}
-                {/* {lastKeypointsData.data.keypoints && (
-                <div>
-                  <p>
-                    <strong>Keypoints:</strong>
-                  </p>
-                  <ul className="ml-4 space-y-1">
-                    <li>
-                        Pose points:{" "}
-                      {lastKeypointsData.data.keypoints.pose?.length || 0}
-                    </li>
-                    <li>
-                      Face points:{" "}
-                      {lastKeypointsData.data.keypoints.face?.length || 0}
-                    </li>
-                    <li>
-                      Left hand points:{" "}
-                      {lastKeypointsData.data.keypoints.left_hand?.length || 0}
-                    </li>
-                    <li>
-                      Right hand points:{" "}
-                      {lastKeypointsData.data.keypoints.right_hand?.length || 0}
-                    </li>
-                  </ul>
-                </div>
-              )} */}
               </div>
             </div>
           )}

@@ -83,47 +83,6 @@ const VideoFeed = ({
     };
   }, [isRecording, isConnected]); // ⚡ removed sendMessage from deps
 
-  // // 📡 Send frames while recording
-  // useEffect(() => {
-  //   if (!isRecording || !isConnected) return;
-
-  //   console.log("📡 Started sending frames...");
-
-  //   const interval = setInterval(() => {
-  //     if (!videoRef.current || !canvasRef.current) return;
-  //     const ctx = canvasRef.current.getContext("2d");
-  //     if (!ctx) return;
-
-  //     ctx.drawImage(
-  //       videoRef.current,
-  //       0,
-  //       0,
-  //       canvasRef.current.width,
-  //       canvasRef.current.height
-  //     );
-
-  //     canvasRef.current.toBlob(
-  //       (blob) => {
-  //         if (blob) {
-  //           blob.arrayBuffer().then((buffer) => {
-  //             sendMessage({
-  //               type: "frame",
-  //               data: Array.from(new Uint8Array(buffer)), // serialize binary → array
-  //             });
-  //           });
-  //         }
-  //       },
-  //       "image/jpeg",
-  //       0.6
-  //     );
-  //   }, 200); // ~10 FPS
-
-  //   return () => {
-  //     clearInterval(interval);
-  //     console.log("🛑 Stopped sending frames");
-  //   };
-  // }, [isRecording, isConnected, sendMessage]);
-
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
