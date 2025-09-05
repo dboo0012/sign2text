@@ -29,46 +29,100 @@ const VideoFeed = ({
     }
   }, [isCameraOn]);
 
-  // 📡 Send frames while recording
-  useEffect(() => {
-    if (!isRecording || !isConnected) return;
+  // 📡 Send frames while recording (15 FPS, smooth, no lag)
+useEffect(() => {
+  if (!isRecording || !isConnected) return
 
-    console.log("📡 Started sending frames...");
+  console.log("📡 Started sending frames...")
 
-    const interval = setInterval(() => {
-      if (!videoRef.current || !canvasRef.current) return;
-      const ctx = canvasRef.current.getContext("2d");
-      if (!ctx) return;
+  let animationFrameId: number
+  let lastSentTime = 0
+  const targetInterval = 1000 / 24 // 15 FPS → ~66ms
 
-      ctx.drawImage(
-        videoRef.current,
-        0,
-        0,
-        canvasRef.current.width,
-        canvasRef.current.height
-      );
+  const captureFrame = () => {
+    const now = performance.now()
+    if (now - lastSentTime >= targetInterval) {
+      lastSentTime = now
 
-      canvasRef.current.toBlob(
-        (blob) => {
-          if (blob) {
-            blob.arrayBuffer().then((buffer) => {
-              sendMessage({
-                type: "frame",
-                data: Array.from(new Uint8Array(buffer)), // serialize binary → array
-              });
-            });
-          }
-        },
-        "image/jpeg",
-        0.6
-      );
-    }, 150); // ~10 FPS
+      if (videoRef.current && canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d")
+        if (ctx) {
+          ctx.drawImage(
+            videoRef.current,
+            0,
+            0,
+            canvasRef.current.width,
+            canvasRef.current.height
+          )
 
-    return () => {
-      clearInterval(interval);
-      console.log("🛑 Stopped sending frames");
-    };
-  }, [isRecording, isConnected, sendMessage]);
+          canvasRef.current.toBlob(
+            (blob) => {
+              if (blob) {
+                blob.arrayBuffer().then((buffer) => {
+                  sendMessage({
+                    type: "frame",
+                    data: Array.from(new Uint8Array(buffer)),
+                  })
+                })
+              }
+            },
+            "image/jpeg",
+            0.6 // compression quality
+          )
+        }
+      }
+    }
+    animationFrameId = requestAnimationFrame(captureFrame)
+  }
+
+  animationFrameId = requestAnimationFrame(captureFrame)
+
+  return () => {
+    cancelAnimationFrame(animationFrameId)
+    console.log("🛑 Stopped sending frames")
+  }
+}, [isRecording, isConnected]) // ⚡ removed sendMessage from deps
+
+  // // 📡 Send frames while recording
+  // useEffect(() => {
+  //   if (!isRecording || !isConnected) return;
+
+  //   console.log("📡 Started sending frames...");
+
+  //   const interval = setInterval(() => {
+  //     if (!videoRef.current || !canvasRef.current) return;
+  //     const ctx = canvasRef.current.getContext("2d");
+  //     if (!ctx) return;
+
+  //     ctx.drawImage(
+  //       videoRef.current,
+  //       0,
+  //       0,
+  //       canvasRef.current.width,
+  //       canvasRef.current.height
+  //     );
+
+  //     canvasRef.current.toBlob(
+  //       (blob) => {
+  //         if (blob) {
+  //           blob.arrayBuffer().then((buffer) => {
+  //             sendMessage({
+  //               type: "frame",
+  //               data: Array.from(new Uint8Array(buffer)), // serialize binary → array
+  //             });
+  //           });
+  //         }
+  //       },
+  //       "image/jpeg",
+  //       0.6
+  //     );
+  //   }, 200); // ~10 FPS
+
+  //   return () => {
+  //     clearInterval(interval);
+  //     console.log("🛑 Stopped sending frames");
+  //   };
+  // }, [isRecording, isConnected, sendMessage]);
 
   const startCamera = async () => {
     try {
