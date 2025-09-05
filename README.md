@@ -9,7 +9,7 @@ WASL Sign Language Recognition interface authored by Team MCS12 - FIT3162.
 - **Typescript** - Primary frontend programming language
 - **React** - Main UI framework
 - **Web Workers** - Non-blocking pose estimation processing
-- **TailwindCSS** - Styling components 
+- **TailwindCSS** - Styling components
 
 ## Backend
 
@@ -35,4 +35,11 @@ git clone <repo>
 cd /sign2text
 npm i
 npm run dev
+```
+
+# Using OpenAi services
+
+```
+// Add to .env
+VITE_OPENAI_API_KEY=''
 ```
