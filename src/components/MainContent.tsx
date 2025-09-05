@@ -4,6 +4,7 @@ import RecognitionCard from "./RecognitionCard";
 import TranslationCard from "./TranslationCard";
 import HistoryCard from "./HistoryCard";
 import WebSocketTestComponent from "./WebSocketTestComponent";
+import DemoKeypointTester from "./DemoKeypointTester";
 import type { Translation } from "../types/translation";
 
 interface MainContentProps {
@@ -17,8 +18,8 @@ interface MainContentProps {
     sign: string;
     confidence: number;
   } | null;
-  currentTranslation: string;
   translations: Translation[];
+  onTranslationReceived?: (translation: string, confidence: number) => void;
 }
 
 const MainContent = ({
@@ -29,8 +30,8 @@ const MainContent = ({
   selectedLanguage,
   onLanguageChange,
   currentSign,
-  currentTranslation,
   translations,
+  onTranslationReceived,
 }: MainContentProps) => {
   if (showTestComponent) {
     return <WebSocketTestComponent />;
@@ -59,12 +60,18 @@ const MainContent = ({
           onLanguageChange={onLanguageChange}
         />
 
-        <RecognitionCard currentSign={currentSign} isRecording={isRecording} />
+        <RecognitionCard
+          currentSign={currentSign}
+          isRecording={isRecording}
+          onWebSocketTranslation={onTranslationReceived}
+        />
 
         <TranslationCard
-          translation={currentTranslation}
+          recognizedText={currentSign?.sign || ""}
           selectedLanguage={selectedLanguage}
         />
+
+        <DemoKeypointTester />
 
         <HistoryCard translations={translations} />
       </div>

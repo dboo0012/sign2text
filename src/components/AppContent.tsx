@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useWebSocketContext } from "../contexts/websocketContext";
 import Header from "./Header";
 import MainContent from "./MainContent";
@@ -13,7 +13,6 @@ const AppContent = () => {
     sign: string;
     confidence: number;
   } | null>(null);
-  const [currentTranslation, setCurrentTranslation] = useState<string>("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showTestComponent, setShowTestComponent] = useState(false);
   const [translations, setTranslations] = useState<Translation[]>([
@@ -50,12 +49,23 @@ const AppContent = () => {
       sign: "Hello I Want to tell you something",
       confidence: 89,
     });
-    setCurrentTranslation("Hola");
   };
 
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
   };
+
+  const handleTranslationReceived = useCallback(
+    (translation: string, confidence: number) => {
+      // Update the recognition card with the translation result from demo keypoints
+      setCurrentSign({
+        sign: translation, // Show the translated text in the recognition card
+        confidence: confidence * 100,
+      });
+      // No longer setting currentTranslation since TranslationCard gets text from currentSign
+    },
+    []
+  ); // Empty dependency array since we only use setCurrentSign which is stable
 
   const handleToggleTestComponent = () => {
     setShowTestComponent(!showTestComponent);
@@ -97,8 +107,8 @@ const AppContent = () => {
         selectedLanguage={selectedLanguage}
         onLanguageChange={handleLanguageChange}
         currentSign={currentSign}
-        currentTranslation={currentTranslation}
         translations={translations}
+        onTranslationReceived={handleTranslationReceived}
       />
 
       <SettingsModal isOpen={isSettingsOpen} onClose={handleCloseSettings} />
