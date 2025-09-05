@@ -6,7 +6,6 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
-  Keypoints,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 
@@ -24,7 +23,7 @@ interface UseWebSocketReturn {
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
-  sendKeypoints: (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => void;
+  sendKeypoints: (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => void;
   connect: () => void;
   disconnect: () => void;
   isConnected: boolean;
@@ -76,11 +75,17 @@ export function useWebSocket({
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: IncomingMessage = JSON.parse(event.data);
+      console.log('WebSocket message received:', {
+        type: message.type,
+        timestamp: new Date().toISOString(),
+        messageSize: event.data.length
+      });
       setLastMessage(message);
 
       switch (message.type) {
         case "keypoints":
           setLastKeypointsData(message as KeypointsMessage);
+          console.log('Keypoints response processed');
           break;
         case "error":
           setLastError(message as ErrorMessage);
@@ -194,12 +199,20 @@ export function useWebSocket({
   }, []);
 
   const sendKeypoints = useCallback(
-    (keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "mediapipe" | "openpose" | "openpose_raw") => {
+    (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => {
+      const seqId = sequenceId || `seq_${Date.now()}`;
+      console.log('Sending keypoints via WebSocket:', {
+        sequenceId: seqId,
+        format: format || "openpose",
+        timestamp: new Date().toISOString(),
+        keypointsSize: JSON.stringify(keypoints).length
+      });
+      
       sendMessage({
         type: "keypoint_sequence",
         keypoints,
-        sequence_id: sequenceId || `seq_${Date.now()}`,
-        format: format || "mediapipe",
+        sequence_id: seqId,
+        format: format || "openpose",
       });
     },
     [sendMessage]

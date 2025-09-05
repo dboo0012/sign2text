@@ -9,23 +9,9 @@ export interface FrameInfo {
   has_right_hand: boolean;
 }
 
-export interface Keypoints {
-  // 33 pose landmarks: [x, y, z, visibility]
-  pose: [number, number, number, number][];
-
-  // 468 face landmarks: [x, y, z]
-  face: [number, number, number][];
-
-  // 21 left hand landmarks: [x, y, z]
-  left_hand: [number, number, number][];
-
-  // 21 right hand landmarks: [x, y, z]
-  right_hand: [number, number, number][];
-}
-
 export interface ProcessingResult {
   success: boolean;
-  keypoints: Keypoints;
+  keypoints: OpenPoseKeypoints;
   frame_info: FrameInfo;
   error?: string;
 }
@@ -37,9 +23,9 @@ export interface WebSocketMessage {
 
 export interface KeypointSequenceMessage extends WebSocketMessage {
   type: "keypoint_sequence";
-  keypoints: Keypoints | OpenPoseKeypoints | OpenPoseData;
+  keypoints: OpenPoseKeypoints | OpenPoseData;
   sequence_id: string;
-  format?: "mediapipe" | "openpose" | "openpose_raw";
+  format?: "openpose" | "openpose_raw";
 }
 
 export interface PingMessage extends WebSocketMessage {

@@ -3,6 +3,7 @@ import { useWebSocketContext } from "../contexts/websocketContext";
 import { WebSocketConnectionState } from "../types/websocket";
 import type { OpenPoseData } from "../types/pose";
 import { loadDemoOpenPoseData } from "../utils/keypointsLoader";
+import TranslationCard from "./TranslationCard";
 
 interface TestMessage {
   id: string;
@@ -37,6 +38,11 @@ export default function WebSocketTestComponent() {
   const [isLoadingDemo, setIsLoadingDemo] = useState(true);
   const [demoLoaded, setDemoLoaded] = useState(false);
 
+  // Translation state
+  const [latestTranslation, setLatestTranslation] = useState<string>("");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
+  const [translationConfidence, setTranslationConfidence] = useState<number>(0);
+
   // Helper function to generate unique message IDs
   const generateMessageId = () => {
     return crypto.randomUUID();
@@ -53,6 +59,19 @@ export default function WebSocketTestComponent() {
         direction: "incoming",
       };
       setMessages((prev) => [...prev, newMessage].slice(-10)); // Keep last 10 messages
+
+      // Extract translation from success messages
+      // Handle both typed messages and raw success messages
+      const messageData = lastMessage as any;
+      if (
+        messageData.type === "success" &&
+        messageData.processed_data?.prediction?.text
+      ) {
+        setLatestTranslation(messageData.processed_data.prediction.text);
+        setTranslationConfidence(
+          messageData.processed_data.prediction.confidence || 0
+        );
+      }
     }
   }, [lastMessage]);
 
@@ -64,7 +83,9 @@ export default function WebSocketTestComponent() {
         const openPoseDataArray = await loadDemoOpenPoseData();
         setDemoKeypoints(openPoseDataArray);
         setDemoLoaded(true);
-        console.log(`Loaded ${openPoseDataArray.length} OpenPose data frames from demo data`);
+        console.log(
+          `Loaded ${openPoseDataArray.length} OpenPose data frames from demo data`
+        );
       } catch (error) {
         console.error("Failed to load demo OpenPose data:", error);
       } finally {
@@ -184,252 +205,259 @@ export default function WebSocketTestComponent() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          WebSocket Connection Test
-        </h2>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - WebSocket Test Controls */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            WebSocket Connection Test
+          </h2>
 
-        {/* Connection Status */}
-        <div className="mb-6">
-          <div
-            className={`inline-flex items-center px-4 py-2 rounded-lg border ${getConnectionStatusColor()}`}
-          >
+          {/* Connection Status */}
+          <div className="mb-6">
             <div
-              className={`w-3 h-3 rounded-full mr-2 ${
-                isConnected
-                  ? "bg-green-500"
-                  : connectionState === WebSocketConnectionState.CONNECTING
-                  ? "bg-yellow-500"
-                  : connectionState === WebSocketConnectionState.ERROR
-                  ? "bg-red-500"
-                  : "bg-gray-500"
-              }`}
-            ></div>
-            <span className="font-medium">Status: {connectionState}</span>
-          </div>
-        </div>
-
-        {/* Connection Controls */}
-        <div className="mb-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              WebSocket URL:
-            </label>
-            <input
-              type="text"
-              value={wsUrl}
-              onChange={(e) => setWsUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="ws://localhost:8000/ws/video_stream"
-            />
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={handleConnect}
-              disabled={isConnected}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className={`inline-flex items-center px-4 py-2 rounded-lg border ${getConnectionStatusColor()}`}
             >
-              Connect
-            </button>
-            <button
-              onClick={handleDisconnect}
-              disabled={!isConnected}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Disconnect
-            </button>
-            <button
-              onClick={handleSendPing}
-              disabled={!isConnected}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Send Ping
-            </button>
-          </div>
-        </div>
-
-        {/* Demo Data Status */}
-        <div className="mb-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Demo Data Status
-          </h3>
-          <div className="p-4 bg-gray-50 rounded-lg space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">
-                  Real keypoint data from sign language video in OpenPose format ({demoKeypoints.length} frames loaded)
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Status:{" "}
-                  {isLoadingDemo
-                    ? "Loading demo data..."
-                    : demoLoaded
-                    ? `Ready - Current frame: ${currentFrameIndex + 1}/${demoKeypoints.length}`
-                    : "Failed to load"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <label
-                  htmlFor="fps-control"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  FPS:
-                </label>
-                <select
-                  id="fps-control"
-                  value={fps}
-                  onChange={(e) => setFps(Number(e.target.value))}
-                  className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={1}>1 FPS</option>
-                  <option value={5}>5 FPS</option>
-                  <option value={10}>10 FPS</option>
-                  <option value={15}>15 FPS</option>
-                  <option value={24}>24 FPS</option>
-                  <option value={30}>30 FPS</option>
-                  <option value={60}>60 FPS</option>
-                </select>
-              </div>
-
-              <button
-                onClick={() => setCurrentFrameIndex(0)}
-                disabled={!demoLoaded}
-                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                Reset to Frame 1
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Keypoint Testing */}
-        <div className="mb-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Keypoint Testing
-          </h3>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-4">
-              {demoLoaded
-                ? `Send keypoint data from demo frames. Using real sign language data in OpenPose format (${demoKeypoints.length} frames).`
-                : isLoadingDemo
-                ? "Loading demo data... Please wait."
-                : "Failed to load demo data."}
-            </p>
-            <div className="flex flex-wrap gap-4 items-center">
-              <button
-                onClick={handleSendTestKeypoints}
-                disabled={!isConnected || !demoLoaded}
-                className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {demoLoaded
-                  ? "Send Next Demo Frame"
-                  : "Demo Data Loading..."}
-              </button>
-              <button
-                onClick={isStreaming ? stopKeypointStream : startKeypointStream}
-                disabled={!isConnected || !demoLoaded}
-                className={`px-6 py-2 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed ${
-                  isStreaming
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-green-600 hover:bg-green-700"
+              <div
+                className={`w-3 h-3 rounded-full mr-2 ${
+                  isConnected
+                    ? "bg-green-500"
+                    : connectionState === WebSocketConnectionState.CONNECTING
+                    ? "bg-yellow-500"
+                    : connectionState === WebSocketConnectionState.ERROR
+                    ? "bg-red-500"
+                    : "bg-gray-500"
                 }`}
+              ></div>
+              <span className="font-medium">Status: {connectionState}</span>
+            </div>
+          </div>
+
+          {/* Connection Controls */}
+          <div className="mb-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                WebSocket URL:
+              </label>
+              <input
+                type="text"
+                value={wsUrl}
+                onChange={(e) => setWsUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="ws://localhost:8000/ws/video_stream"
+              />
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleConnect}
+                disabled={isConnected}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {isStreaming
-                  ? `Stop Stream (${fps} FPS)`
-                  : `Start Stream (${fps} FPS)`}
+                Connect
               </button>
-              <div className="text-sm text-gray-500 space-y-1">
+              <button
+                onClick={handleDisconnect}
+                disabled={!isConnected}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Disconnect
+              </button>
+              <button
+                onClick={handleSendPing}
+                disabled={!isConnected}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Send Ping
+              </button>
+            </div>
+          </div>
+
+          {/* Demo Data Status */}
+          <div className="mb-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Demo Data Status
+            </h3>
+            <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  {demoLoaded
-                    ? `Using demo data: Frame ${currentFrameIndex + 1}/${demoKeypoints.length} (OpenPose format)`
-                    : isLoadingDemo
-                    ? "Loading demo data..."
-                    : "Demo data required for keypoint transmission"}
+                  <p className="text-sm text-gray-600">
+                    Real keypoint data from sign language video in OpenPose
+                    format ({demoKeypoints.length} frames loaded)
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Status:{" "}
+                    {isLoadingDemo
+                      ? "Loading demo data..."
+                      : demoLoaded
+                      ? `Ready - Current frame: ${currentFrameIndex + 1}/${
+                          demoKeypoints.length
+                        }`
+                      : "Failed to load"}
+                  </p>
                 </div>
-                <div className="text-xs">
-                  {demoLoaded
-                    ? "Real sign language keypoint data: 25 pose + 70 face + 42 hand landmarks (OpenPose 2D format)"
-                    : "Load demo data to enable keypoint transmission with real sign language data"}
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label
+                    htmlFor="fps-control"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    FPS:
+                  </label>
+                  <select
+                    id="fps-control"
+                    value={fps}
+                    onChange={(e) => setFps(Number(e.target.value))}
+                    className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={1}>1 FPS</option>
+                    <option value={5}>5 FPS</option>
+                    <option value={10}>10 FPS</option>
+                    <option value={15}>15 FPS</option>
+                    <option value={24}>24 FPS</option>
+                    <option value={30}>30 FPS</option>
+                    <option value={60}>60 FPS</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => setCurrentFrameIndex(0)}
+                  disabled={!demoLoaded}
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  Reset to Frame 1
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Keypoint Testing */}
+          <div className="mb-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Keypoint Testing
+            </h3>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-4">
+                {demoLoaded
+                  ? `Send keypoint data from demo frames. Using real sign language data in OpenPose format (${demoKeypoints.length} frames).`
+                  : isLoadingDemo
+                  ? "Loading demo data... Please wait."
+                  : "Failed to load demo data."}
+              </p>
+              <div className="flex flex-wrap gap-4 items-center">
+                <button
+                  onClick={handleSendTestKeypoints}
+                  disabled={!isConnected || !demoLoaded}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {demoLoaded ? "Send Next Demo Frame" : "Demo Data Loading..."}
+                </button>
+                <button
+                  onClick={
+                    isStreaming ? stopKeypointStream : startKeypointStream
+                  }
+                  disabled={!isConnected || !demoLoaded}
+                  className={`px-6 py-2 text-white rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed ${
+                    isStreaming
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  {isStreaming
+                    ? `Stop Stream (${fps} FPS)`
+                    : `Start Stream (${fps} FPS)`}
+                </button>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <div>
+                    {demoLoaded
+                      ? `Using demo data: Frame ${currentFrameIndex + 1}/${
+                          demoKeypoints.length
+                        } (OpenPose format)`
+                      : isLoadingDemo
+                      ? "Loading demo data..."
+                      : "Demo data required for keypoint transmission"}
+                  </div>
+                  <div className="text-xs">
+                    {demoLoaded
+                      ? "Real sign language keypoint data: 25 pose + 70 face + 42 hand landmarks (OpenPose 2D format)"
+                      : "Load demo data to enable keypoint transmission with real sign language data"}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Error Display */}
-        {lastError && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-200 rounded-md">
-            <h4 className="text-sm font-medium text-red-800 mb-1">
-              Last Error:
-            </h4>
-            <p className="text-sm text-red-700">{lastError.message}</p>
-            {/* <p className="text-xs text-red-600 mt-1">
+          {/* Error Display */}
+          {lastError && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-200 rounded-md">
+              <h4 className="text-sm font-medium text-red-800 mb-1">
+                Last Error:
+              </h4>
+              <p className="text-sm text-red-700">{lastError.message}</p>
+              {/* <p className="text-xs text-red-600 mt-1">
               Timestamp: {lastError.timestamp ? new Date(lastError.timestamp * 1000).toLocaleString() : 'N/A'}
             </p> */}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Keypoints Data Display */}
-        {lastKeypointsData && (
-          <div className="mb-6 p-4 bg-blue-100 border border-blue-200 rounded-md">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">
-              Latest Keypoints Data:
-            </h4>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>
-                <strong>Success:</strong>{" "}
-                {lastKeypointsData.data.success ? "Yes" : "No"}
-              </p>
-              {lastKeypointsData.data.frame_info && (
-                <div>
-                  <p>
-                    <strong>Frame Info:</strong>
-                  </p>
-                  <ul className="ml-4 space-y-1">
-                    <li>
-                      Size: {lastKeypointsData.data.frame_info.width}x
-                      {lastKeypointsData.data.frame_info.height}
-                    </li>
-                    <li>
-                      Has Pose:{" "}
-                      {lastKeypointsData.data.frame_info.has_pose
-                        ? "Yes"
-                        : "No"}
-                    </li>
-                    <li>
-                      Has Face:{" "}
-                      {lastKeypointsData.data.frame_info.has_face
-                        ? "Yes"
-                        : "No"}
-                    </li>
-                    <li>
-                      Has Left Hand:{" "}
-                      {lastKeypointsData.data.frame_info.has_left_hand
-                        ? "Yes"
-                        : "No"}
-                    </li>
-                    <li>
-                      Has Right Hand:{" "}
-                      {lastKeypointsData.data.frame_info.has_right_hand
-                        ? "Yes"
-                        : "No"}
-                    </li>
-                  </ul>
-                </div>
-              )}
-              {lastKeypointsData.data.keypoints && (
+          {/* Keypoints Data Display */}
+          {lastKeypointsData && (
+            <div className="mb-6 p-4 bg-blue-100 border border-blue-200 rounded-md">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">
+                Latest Keypoints Data:
+              </h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>
+                  <strong>Success:</strong>{" "}
+                  {lastKeypointsData.data.success ? "Yes" : "No"}
+                </p>
+                {lastKeypointsData.data.frame_info && (
+                  <div>
+                    <p>
+                      <strong>Frame Info:</strong>
+                    </p>
+                    <ul className="ml-4 space-y-1">
+                      <li>
+                        Size: {lastKeypointsData.data.frame_info.width}x
+                        {lastKeypointsData.data.frame_info.height}
+                      </li>
+                      <li>
+                        Has Pose:{" "}
+                        {lastKeypointsData.data.frame_info.has_pose
+                          ? "Yes"
+                          : "No"}
+                      </li>
+                      <li>
+                        Has Face:{" "}
+                        {lastKeypointsData.data.frame_info.has_face
+                          ? "Yes"
+                          : "No"}
+                      </li>
+                      <li>
+                        Has Left Hand:{" "}
+                        {lastKeypointsData.data.frame_info.has_left_hand
+                          ? "Yes"
+                          : "No"}
+                      </li>
+                      <li>
+                        Has Right Hand:{" "}
+                        {lastKeypointsData.data.frame_info.has_right_hand
+                          ? "Yes"
+                          : "No"}
+                      </li>
+                    </ul>
+                  </div>
+                )}
+                {/* {lastKeypointsData.data.keypoints && (
                 <div>
                   <p>
                     <strong>Keypoints:</strong>
                   </p>
                   <ul className="ml-4 space-y-1">
                     <li>
-                      Pose points:{" "}
+                        Pose points:{" "}
                       {lastKeypointsData.data.keypoints.pose?.length || 0}
                     </li>
                     <li>
@@ -446,67 +474,118 @@ export default function WebSocketTestComponent() {
                     </li>
                   </ul>
                 </div>
+              )} */}
+              </div>
+            </div>
+          )}
+
+          {/* Message History */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Message History
+              </h3>
+              <button
+                onClick={clearMessages}
+                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              >
+                Clear History
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {messages.length === 0 ? (
+                <p className="text-gray-500 text-sm">
+                  No messages yet. Connect and interact to see message history.
+                </p>
+              ) : (
+                messages
+                  .slice()
+                  .reverse()
+                  .map((message) => (
+                    <div
+                      key={message.id}
+                      className={`p-3 rounded-md text-sm ${
+                        message.direction === "incoming"
+                          ? "bg-blue-50 border-l-4 border-blue-400"
+                          : "bg-green-50 border-l-4 border-green-400"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <span
+                          className={`font-medium ${
+                            message.direction === "incoming"
+                              ? "text-blue-800"
+                              : "text-green-800"
+                          }`}
+                        >
+                          {message.direction === "incoming"
+                            ? "← Received"
+                            : "→ Sent"}
+                          : {message.type}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                        {JSON.stringify(message.data, null, 2)}
+                      </pre>
+                    </div>
+                  ))
               )}
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Message History */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Message History
+        {/* Right Column - Translation Display */}
+        <div className="space-y-6">
+          {/* Language Selection */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Translation Settings
             </h3>
-            <button
-              onClick={clearMessages}
-              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-            >
-              Clear History
-            </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Language:
+                </label>
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="zh">Chinese</option>
+                </select>
+              </div>
+              {latestTranslation && (
+                <div className="text-sm text-gray-600">
+                  <p>
+                    <strong>Confidence:</strong>{" "}
+                    {(translationConfidence * 100).toFixed(1)}%
+                  </p>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {translationConfidence > 0.8
+                      ? "✅ High confidence"
+                      : translationConfidence > 0.5
+                      ? "⚠️ Medium confidence"
+                      : "❌ Low confidence"}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            {messages.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                No messages yet. Connect and interact to see message history.
-              </p>
-            ) : (
-              messages
-                .slice()
-                .reverse()
-                .map((message) => (
-                  <div
-                    key={message.id}
-                    className={`p-3 rounded-md text-sm ${
-                      message.direction === "incoming"
-                        ? "bg-blue-50 border-l-4 border-blue-400"
-                        : "bg-green-50 border-l-4 border-green-400"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <span
-                        className={`font-medium ${
-                          message.direction === "incoming"
-                            ? "text-blue-800"
-                            : "text-green-800"
-                        }`}
-                      >
-                        {message.direction === "incoming"
-                          ? "← Received"
-                          : "→ Sent"}
-                        : {message.type}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {message.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-x-auto">
-                      {JSON.stringify(message.data, null, 2)}
-                    </pre>
-                  </div>
-                ))
-            )}
-          </div>
+          {/* Translation Card */}
+          <TranslationCard
+            translation={latestTranslation}
+            selectedLanguage={selectedLanguage}
+          />
         </div>
       </div>
     </div>

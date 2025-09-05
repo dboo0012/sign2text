@@ -30,58 +30,58 @@ const VideoFeed = ({
   }, [isCameraOn]);
 
   // 📡 Send frames while recording (15 FPS, smooth, no lag)
-useEffect(() => {
-  if (!isRecording || !isConnected) return
+  useEffect(() => {
+    if (!isRecording || !isConnected) return;
 
-  console.log("📡 Started sending frames...")
+    console.log("📡 Started sending frames...");
 
-  let animationFrameId: number
-  let lastSentTime = 0
-  const targetInterval = 1000 / 24 // 15 FPS → ~66ms
+    let animationFrameId: number;
+    let lastSentTime = 0;
+    const targetInterval = 1000 / 24; // 15 FPS → ~66ms
 
-  const captureFrame = () => {
-    const now = performance.now()
-    if (now - lastSentTime >= targetInterval) {
-      lastSentTime = now
+    const captureFrame = () => {
+      const now = performance.now();
+      if (now - lastSentTime >= targetInterval) {
+        lastSentTime = now;
 
-      if (videoRef.current && canvasRef.current) {
-        const ctx = canvasRef.current.getContext("2d")
-        if (ctx) {
-          ctx.drawImage(
-            videoRef.current,
-            0,
-            0,
-            canvasRef.current.width,
-            canvasRef.current.height
-          )
+        if (videoRef.current && canvasRef.current) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(
+              videoRef.current,
+              0,
+              0,
+              canvasRef.current.width,
+              canvasRef.current.height
+            );
 
-          canvasRef.current.toBlob(
-            (blob) => {
-              if (blob) {
-                blob.arrayBuffer().then((buffer) => {
-                  sendMessage({
-                    type: "frame",
-                    data: Array.from(new Uint8Array(buffer)),
-                  })
-                })
-              }
-            },
-            "image/jpeg",
-            0.6 // compression quality
-          )
+            canvasRef.current.toBlob(
+              (blob) => {
+                if (blob) {
+                  blob.arrayBuffer().then((buffer) => {
+                    sendMessage({
+                      type: "frame",
+                      data: Array.from(new Uint8Array(buffer)),
+                    });
+                  });
+                }
+              },
+              "image/jpeg",
+              0.6 // compression quality
+            );
+          }
         }
       }
-    }
-    animationFrameId = requestAnimationFrame(captureFrame)
-  }
+      animationFrameId = requestAnimationFrame(captureFrame);
+    };
 
-  animationFrameId = requestAnimationFrame(captureFrame)
+    animationFrameId = requestAnimationFrame(captureFrame);
 
-  return () => {
-    cancelAnimationFrame(animationFrameId)
-    console.log("🛑 Stopped sending frames")
-  }
-}, [isRecording, isConnected]) // ⚡ removed sendMessage from deps
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      console.log("🛑 Stopped sending frames");
+    };
+  }, [isRecording, isConnected]); // ⚡ removed sendMessage from deps
 
   // // 📡 Send frames while recording
   // useEffect(() => {
