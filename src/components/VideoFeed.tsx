@@ -29,22 +29,24 @@ const VideoFeed = ({
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }
+        video: { width: 640, height: 480 },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
     } catch (error) {
-      console.error('Error accessing camera:', error);
+      console.error("Error accessing camera:", error);
       setIsCameraOn(false);
-      alert('Camera not found. Please check your camera permissions and try again.');
+      alert(
+        "Camera not found. Please check your camera permissions and try again."
+      );
     }
   };
 
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
       videoRef.current.srcObject = null;
     }
   };
@@ -64,7 +66,7 @@ const VideoFeed = ({
           muted
           className="w-full h-full object-cover"
         />
-        
+
         {/* Camera Off Placeholder */}
         {!isCameraOn && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
@@ -92,12 +94,12 @@ const VideoFeed = ({
           onClick={toggleCamera}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
             isCameraOn
-              ? 'bg-gray-600 text-white hover:bg-gray-700'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? "bg-gray-600 text-white hover:bg-gray-700"
+              : "bg-blue-600 text-white hover:bg-blue-700"
           }`}
         >
-          <span className="text-lg">{isCameraOn ? '📹' : '📷'}</span>
-          <span>{isCameraOn ? 'Stop Camera' : 'Start Camera'}</span>
+          <span className="text-lg">{isCameraOn ? "📹" : "📷"}</span>
+          <span>{isCameraOn ? "Stop Camera" : "Start Camera"}</span>
         </button>
 
         {/* Recording Controls */}
@@ -106,12 +108,12 @@ const VideoFeed = ({
             onClick={isRecording ? onStopRecording : onStartRecording}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
               isRecording
-                ? 'bg-red-600 text-white hover:bg-red-700'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-green-600 text-white hover:bg-green-700"
             }`}
           >
-            <span className="text-lg">{isRecording ? '⏹️' : '▶️'}</span>
-            <span>{isRecording ? 'Stop Recording' : 'Start Recording'}</span>
+            <span className="text-lg">{isRecording ? "⏹️" : "▶️"}</span>
+            <span>{isRecording ? "Stop Recording" : "Start Recording"}</span>
           </button>
         )}
       </div>
@@ -119,4 +121,4 @@ const VideoFeed = ({
   );
 };
 
-export default VideoFeed; 
+export default VideoFeed;

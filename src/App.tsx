@@ -57,7 +57,10 @@ function App() {
     setIsRecording(true);
     // Simulate recognition after 2 seconds
     setTimeout(() => {
-      setCurrentSign({ sign: "Hello", confidence: 89 });
+      setCurrentSign({
+        sign: "Hello I Want to tell you something",
+        confidence: 89,
+      });
       setCurrentTranslation("Hola");
       setIsRecording(false);
     }, 2000);
