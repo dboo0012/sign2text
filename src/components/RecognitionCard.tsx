@@ -1,25 +1,49 @@
 import { useEffect, useState } from "react";
-import { translateText } from "../utils/openai/openai";
+import { useWebSocketContext } from "../contexts/websocketContext";
 
 interface RecognitionCardProps {
   currentSign: { sign: string; confidence: number } | null;
   isRecording: boolean;
+  onWebSocketTranslation?: (translation: string, confidence: number) => void;
 }
 
-const RecognitionCard = ({ currentSign, isRecording }: RecognitionCardProps) => {
-  const [translatedSign, setTranslatedSign] = useState<string>("");
+const RecognitionCard = ({
+  currentSign,
+  isRecording,
+  onWebSocketTranslation,
+}: RecognitionCardProps) => {
+  const { lastMessage } = useWebSocketContext();
+  const [webSocketSign, setWebSocketSign] = useState<{
+    sign: string;
+    confidence: number;
+  } | null>(null);
 
+  // Handle WebSocket messages directly in RecognitionCard
   useEffect(() => {
-    if (currentSign) {
-      // Automatically translate recognized English sign
-      translateText(currentSign.sign, "Malay") // you can pass "Chinese", "Arabic", etc.
-        .then((result) => setTranslatedSign(result))
-        .catch(() => setTranslatedSign(""));
-    } else {
-      setTranslatedSign("");
-    }
-  }, [currentSign]);
+    if (lastMessage) {
+      const messageData = lastMessage as any;
+      if (
+        messageData.type === "success" &&
+        messageData.processed_data?.prediction?.text
+      ) {
+        const translation = messageData.processed_data.prediction.text;
+        const confidence =
+          messageData.processed_data.prediction.confidence || 0;
 
+        // Update local state for WebSocket results
+        setWebSocketSign({
+          sign: translation,
+          confidence: confidence * 100,
+        });
+
+        // Also notify parent component
+        onWebSocketTranslation?.(translation, confidence);
+      }
+    }
+  }, [lastMessage]); // Remove onWebSocketTranslation from dependencies
+
+  // Use WebSocket sign if available, otherwise use the passed currentSign
+  const displaySign = webSocketSign || currentSign;
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 90) return "text-green-600 bg-green-100";
     if (confidence >= 70) return "text-yellow-600 bg-yellow-100";
@@ -40,53 +64,56 @@ const RecognitionCard = ({ currentSign, isRecording }: RecognitionCardProps) => 
         {isRecording && (
           <div className="flex items-center space-x-3">
             <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              ></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              ></div>
+              <div
+                className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              ></div>
             </div>
-            <span className="text-sm text-blue-600 font-medium">Analyzing gesture...</span>
+            <span className="text-sm text-blue-600 font-medium">
+              Analyzing gesture...
+            </span>
           </div>
         )}
 
-        {currentSign ? (
+        {displaySign ? (
           <div className="space-y-3">
             {/* Recognized Sign */}
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900 mb-2">
-                "{currentSign.sign}"
+                "{displaySign.sign}"
               </div>
-              <div className="text-sm text-gray-600">Recognized Sign (English)</div>
+              <div className="text-sm text-gray-600">Recognized Sign</div>
             </div>
-
-            {/* Translated Sign */}
-            {translatedSign && (
-              <div className="text-center">
-                <div className="text-2xl font-semibold text-indigo-700 mb-1">
-                  "{translatedSign}"
-                </div>
-                <div className="text-xs text-gray-500">Translated</div>
-              </div>
-            )}
 
             {/* Confidence Score */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Confidence</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Confidence
+                </span>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getConfidenceColor(
-                    currentSign.confidence
+                    displaySign.confidence
                   )}`}
                 >
-                  {currentSign.confidence}%
+                  {displaySign.confidence}%
                 </span>
               </div>
 
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-300 ${getConfidenceBarColor(
-                    currentSign.confidence
+                    displaySign.confidence
                   )}`}
-                  style={{ width: `${currentSign.confidence}%` }}
+                  style={{ width: `${displaySign.confidence}%` }}
                 ></div>
               </div>
             </div>
@@ -106,8 +133,6 @@ const RecognitionCard = ({ currentSign, isRecording }: RecognitionCardProps) => 
 };
 
 export default RecognitionCard;
-
-
 
 // interface RecognitionCardProps {
 //   currentSign: { sign: string; confidence: number } | null
@@ -134,7 +159,7 @@ export default RecognitionCard;
 //     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
 //       <div className="space-y-4">
 //         <h3 className="text-lg font-semibold text-gray-900">Recognition</h3>
-        
+
 //         {isRecording && (
 //           <div className="flex items-center space-x-3">
 //             <div className="flex space-x-1">
@@ -164,10 +189,10 @@ export default RecognitionCard;
 //                   {currentSign.confidence}%
 //                 </span>
 //               </div>
-              
+
 //               {/* Confidence Bar */}
 //               <div className="w-full bg-gray-200 rounded-full h-2">
-//                 <div 
+//                 <div
 //                   className={`h-2 rounded-full transition-all duration-300 ${getConfidenceBarColor(currentSign.confidence)}`}
 //                   style={{ width: `${currentSign.confidence}%` }}
 //                 ></div>
@@ -209,4 +234,4 @@ export default RecognitionCard;
 //   )
 // }
 
-// export default RecognitionCard 
+// export default RecognitionCard

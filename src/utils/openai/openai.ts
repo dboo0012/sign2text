@@ -1,5 +1,6 @@
 // src/utils/openai.ts
 import OpenAI from "openai";
+import { MODELS } from "../../types/models";
 
 const client = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY, // store your API key in .env
@@ -10,7 +11,7 @@ const client = new OpenAI({
 export async function translateText(text: string, targetLang: string): Promise<string> {
   try {
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini", // or gpt-4o for higher quality
+      model: MODELS.OPENAI, // or gpt-4o for higher quality
       messages: [
         {
           role: "system",

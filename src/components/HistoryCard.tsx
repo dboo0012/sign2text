@@ -1,43 +1,39 @@
-interface Translation {
-  id: string
-  originalSign: string
-  translatedText: string
-  timestamp: Date
-  confidence: number
-}
+import type { Translation } from "../types/translation";
 
 interface HistoryCardProps {
-  translations: Translation[]
+  translations: Translation[];
 }
 
 const HistoryCard = ({ translations }: HistoryCardProps) => {
   const formatTimestamp = (timestamp: Date) => {
-    const now = new Date()
-    const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000)
-    
+    const now = new Date();
+    const diffInSeconds = Math.floor(
+      (now.getTime() - timestamp.getTime()) / 1000
+    );
+
     if (diffInSeconds < 60) {
-      return 'Just now'
+      return "Just now";
     } else if (diffInSeconds < 3600) {
-      const minutes = Math.floor(diffInSeconds / 60)
-      return `${minutes}m ago`
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes}m ago`;
     } else if (diffInSeconds < 86400) {
-      const hours = Math.floor(diffInSeconds / 3600)
-      return `${hours}h ago`
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours}h ago`;
     } else {
-      return timestamp.toLocaleDateString()
+      return timestamp.toLocaleDateString();
     }
-  }
+  };
 
   const getConfidenceBadge = (confidence: number) => {
-    if (confidence >= 90) return 'bg-green-100 text-green-800'
-    if (confidence >= 70) return 'bg-yellow-100 text-yellow-800'
-    return 'bg-red-100 text-red-800'
-  }
+    if (confidence >= 90) return "bg-green-100 text-green-800";
+    if (confidence >= 70) return "bg-yellow-100 text-yellow-800";
+    return "bg-red-100 text-red-800";
+  };
 
   const clearHistory = () => {
     // This would be handled by parent component
-    console.log('Clear history clicked')
-  }
+    console.log("Clear history clicked");
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -67,16 +63,24 @@ const HistoryCard = ({ translations }: HistoryCardProps) => {
                   <div className="text-sm font-medium text-gray-900">
                     {translation.originalSign} → {translation.translatedText}
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConfidenceBadge(translation.confidence)}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getConfidenceBadge(
+                      translation.confidence
+                    )}`}
+                  >
                     {translation.confidence}%
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>{formatTimestamp(translation.timestamp)}</span>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => navigator.clipboard.writeText(translation.translatedText)}
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          translation.translatedText
+                        )
+                      }
                       className="hover:text-blue-600 transition-colors"
                       title="Copy translation"
                     >
@@ -84,8 +88,10 @@ const HistoryCard = ({ translations }: HistoryCardProps) => {
                     </button>
                     <button
                       onClick={() => {
-                        const utterance = new SpeechSynthesisUtterance(translation.translatedText)
-                        speechSynthesis.speak(utterance)
+                        const utterance = new SpeechSynthesisUtterance(
+                          translation.translatedText
+                        );
+                        speechSynthesis.speak(utterance);
                       }}
                       className="hover:text-blue-600 transition-colors"
                       title="Speak translation"
@@ -112,18 +118,24 @@ const HistoryCard = ({ translations }: HistoryCardProps) => {
           <div className="pt-3 border-t border-gray-100">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-lg font-bold text-gray-900">{translations.length}</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {translations.length}
+                </div>
                 <div className="text-xs text-gray-500">Total</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-gray-900">
-                  {Math.round(translations.reduce((acc, t) => acc + t.confidence, 0) / translations.length)}%
+                  {Math.round(
+                    translations.reduce((acc, t) => acc + t.confidence, 0) /
+                      translations.length
+                  )}
+                  %
                 </div>
                 <div className="text-xs text-gray-500">Avg Confidence</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-gray-900">
-                  {translations.filter(t => t.confidence >= 90).length}
+                  {translations.filter((t) => t.confidence >= 90).length}
                 </div>
                 <div className="text-xs text-gray-500">High Quality</div>
               </div>
@@ -132,7 +144,7 @@ const HistoryCard = ({ translations }: HistoryCardProps) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default HistoryCard 
+export default HistoryCard;
