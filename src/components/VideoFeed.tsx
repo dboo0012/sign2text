@@ -5,6 +5,7 @@ interface VideoFeedProps {
   isRecording: boolean;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  
 }
 
 const VideoFeed = ({
@@ -29,6 +30,29 @@ const VideoFeed = ({
     }
   }, [isCameraOn]);
 
+    useEffect(() => {
+    let animationFrameId: number;
+
+    const renderFrame = () => {
+      if (videoRef.current && canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(
+            videoRef.current,
+            0,
+            0,
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+        }
+      }
+      animationFrameId = requestAnimationFrame(renderFrame);
+    };
+
+    animationFrameId = requestAnimationFrame(renderFrame);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
   // 📡 Send frames while recording (15 FPS, smooth, no lag)
   useEffect(() => {
     if (!isRecording || !isConnected) return;
@@ -37,45 +61,71 @@ const VideoFeed = ({
 
     let animationFrameId: number;
     let lastSentTime = 0;
-    const targetInterval = 1000 / 24; // 15 FPS → ~66ms
+    const targetInterval = 1000 / 15; // 15 FPS → ~66ms
 
-    const captureFrame = () => {
-      const now = performance.now();
-      if (now - lastSentTime >= targetInterval) {
-        lastSentTime = now;
+    const sendFrame = () => {
+    const now = performance.now();
+    if (now - lastSentTime >= targetInterval) {
+      lastSentTime = now;
 
-        if (videoRef.current && canvasRef.current) {
-          const ctx = canvasRef.current.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(
-              videoRef.current,
-              0,
-              0,
-              canvasRef.current.width,
-              canvasRef.current.height
-            );
-
-            canvasRef.current.toBlob(
-              (blob) => {
-                if (blob) {
-                  blob.arrayBuffer().then((buffer) => {
-                    sendMessage({
-                      type: "frame",
-                      data: Array.from(new Uint8Array(buffer)),
-                    });
-                  });
-                }
-              },
-              "image/jpeg",
-              0.6 // compression quality
-            );
-          }
-        }
+      if (canvasRef.current) {
+        canvasRef.current.toBlob(
+          (blob) => {
+            if (blob) {
+              blob.arrayBuffer().then((buffer) => {
+                sendMessage({
+                  type: "frame",
+                  data: Array.from(new Uint8Array(buffer)),
+                });
+              });
+            }
+          },
+          "image/jpeg",
+          1.0 // max quality for clarity
+        );
       }
-      animationFrameId = requestAnimationFrame(captureFrame);
-    };
+    }
+    animationFrameId = requestAnimationFrame(sendFrame);
+  };
 
-    animationFrameId = requestAnimationFrame(captureFrame);
+  animationFrameId = requestAnimationFrame(sendFrame);
+    // const captureFrame = () => {
+    //   const now = performance.now();
+    //   if (now - lastSentTime >= targetInterval) {
+    //     lastSentTime = now;
+
+    //     if (videoRef.current && canvasRef.current) {
+    //       const ctx = canvasRef.current.getContext("2d");
+    //       if (ctx) {
+    //         ctx.drawImage(
+    //           videoRef.current,
+    //           0,
+    //           0,
+    //           canvasRef.current.width,
+    //           canvasRef.current.height
+    //         );
+
+    //         canvasRef.current.toBlob(
+    //           (blob) => {
+    //             if (blob) {
+    //               blob.arrayBuffer().then((buffer) => {
+    //                 sendMessage({
+    //                   type: "frame",
+    //                   data: Array.from(new Uint8Array(buffer)),
+    //                 });
+    //               });
+    //             }
+    //           },
+    //           "image/jpeg",
+    //           0.6 // compression quality
+    //         );
+    //       }
+    //     }
+    //   }
+    //   animationFrameId = requestAnimationFrame(captureFrame);
+    // };
+
+    // animationFrameId = requestAnimationFrame(captureFrame);
 
     return () => {
       cancelAnimationFrame(animationFrameId);

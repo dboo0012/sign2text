@@ -558,8 +558,9 @@ export default function WebSocketTestComponent() {
 
           {/* Translation Card */}
           <TranslationCard
-            translation={latestTranslation}
+            recognizedText={latestTranslation}
             selectedLanguage={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
           />
         </div>
       </div>
