@@ -1,30 +1,34 @@
+import { API_CONFIG } from "../constants/environment";
 
 interface StatusCardProps {
-  selectedLanguage: string
-  onLanguageChange: (language: string) => void
+  selectedLanguage: string;
+  onLanguageChange: (language: string) => void;
 }
 
 // mock languages
 const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Spanish', flag: '🇪🇸' },
-  { code: 'fr', name: 'French', flag: '🇫🇷' },
-  { code: 'de', name: 'German', flag: '🇩🇪' },
-  { code: 'zh', name: 'Chinese', flag: '🇨🇳' },
-]
+  { code: "en", name: "English", flag: "🇺🇸" },
+  { code: "es", name: "Spanish", flag: "🇪🇸" },
+  { code: "fr", name: "French", flag: "🇫🇷" },
+  { code: "de", name: "German", flag: "🇩🇪" },
+  { code: "zh", name: "Chinese", flag: "🇨🇳" },
+];
 
 const StatusCard = ({
   selectedLanguage,
-  onLanguageChange
+  onLanguageChange,
 }: StatusCardProps) => {
-  const selectedLang = languages.find(lang => lang.code === selectedLanguage) || languages[1]
+  const selectedLang =
+    languages.find((lang) => lang.code === selectedLanguage) || languages[1];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Language Settings</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Language Settings
+          </h3>
         </div>
 
         {/* Language Selection */}
@@ -45,7 +49,7 @@ const StatusCard = ({
               ))}
             </select>
           </div>
-          
+
           {/* Current Selection Display */}
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <span>Currently translating to:</span>
@@ -59,13 +63,13 @@ const StatusCard = ({
         {/* Server Info */}
         <div className="pt-2 border-t border-gray-100">
           <div className="text-xs text-gray-500 space-y-1">
-            <div>Server: ws://localhost:8000</div>
+            <div>Server: {API_CONFIG.WS_BASE_URL}</div>
             <div>Model: UniSign v2.1</div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default StatusCard 
+export default StatusCard;

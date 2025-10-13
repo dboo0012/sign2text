@@ -20,6 +20,12 @@ const VideoFeed = ({
   // ✅ Pull values from WebSocket context
   const { isConnected, sendMessage } = useWebSocketContext();
 
+  // Store sendMessage in a ref to avoid stale closures
+  const sendMessageRef = useRef(sendMessage);
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [sendMessage]);
+
   // 🎥 Handle camera toggle
   useEffect(() => {
     if (isCameraOn) {
@@ -29,59 +35,97 @@ const VideoFeed = ({
     }
   }, [isCameraOn]);
 
-  // 📡 Send frames while recording (15 FPS, smooth, no lag)
+  // 📡 Single RAF loop that handles both rendering AND sending (optimized)
   useEffect(() => {
-    if (!isRecording || !isConnected) return;
-
-    console.log("📡 Started sending frames...");
+    if (!isCameraOn) return;
 
     let animationFrameId: number;
     let lastSentTime = 0;
-    const targetInterval = 1000 / 24; // 15 FPS → ~66ms
+    const targetInterval = 1000 / 15; // 15 FPS → ~66ms
 
-    const captureFrame = () => {
-      const now = performance.now();
-      if (now - lastSentTime >= targetInterval) {
-        lastSentTime = now;
+    // Frame tracking
+    let frameCount = 0;
+    let sessionStartTime = performance.now();
+    let lastLogTime = performance.now();
+    const logInterval = 5000; // Log every 5 seconds
 
-        if (videoRef.current && canvasRef.current) {
-          const ctx = canvasRef.current.getContext("2d");
-          if (ctx) {
-            ctx.drawImage(
-              videoRef.current,
-              0,
-              0,
-              canvasRef.current.width,
-              canvasRef.current.height
-            );
+    const renderAndSend = () => {
+      if (videoRef.current && canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d", {
+          willReadFrequently: true, // optimization hint for frequent reads
+        });
 
-            canvasRef.current.toBlob(
-              (blob) => {
-                if (blob) {
-                  blob.arrayBuffer().then((buffer) => {
-                    sendMessage({
-                      type: "frame",
-                      data: Array.from(new Uint8Array(buffer)),
+        if (ctx) {
+          // Draw video to canvas once per frame
+          ctx.drawImage(
+            videoRef.current,
+            0,
+            0,
+            canvasRef.current.width,
+            canvasRef.current.height
+          );
+
+          // Only send frames when recording and connected
+          if (isRecording && isConnected) {
+            const now = performance.now();
+            if (now - lastSentTime >= targetInterval) {
+              lastSentTime = now;
+              frameCount++;
+
+              // Use lower quality for network transfer to reduce payload
+              canvasRef.current.toBlob(
+                (blob) => {
+                  if (blob) {
+                    blob.arrayBuffer().then((buffer) => {
+                      sendMessageRef.current({
+                        type: "frame",
+                        data: Array.from(new Uint8Array(buffer)),
+                      });
                     });
-                  });
-                }
-              },
-              "image/jpeg",
-              0.6 // compression quality
-            );
+                  }
+                },
+                "image/jpeg",
+                0.7 // balanced quality (reduced from 1.0 for better performance)
+              );
+
+              // Periodic logging
+              if (now - lastLogTime >= logInterval) {
+                const elapsedSeconds = (now - sessionStartTime) / 1000;
+                const avgFPS = frameCount / elapsedSeconds;
+                console.log(
+                  `📊 Frame Stats: ${frameCount} frames sent | Avg FPS: ${avgFPS.toFixed(
+                    2
+                  )} | Elapsed: ${elapsedSeconds.toFixed(1)}s`
+                );
+                lastLogTime = now;
+              }
+            }
           }
         }
       }
-      animationFrameId = requestAnimationFrame(captureFrame);
+      animationFrameId = requestAnimationFrame(renderAndSend);
     };
 
-    animationFrameId = requestAnimationFrame(captureFrame);
+    if (isRecording && isConnected) {
+      console.log("📡 Started sending frames...");
+    }
+
+    animationFrameId = requestAnimationFrame(renderAndSend);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      console.log("🛑 Stopped sending frames");
+      if (isRecording && isConnected) {
+        const totalSeconds = (performance.now() - sessionStartTime) / 1000;
+        const avgFPS = frameCount / totalSeconds;
+        console.log(`🛑 Stopped sending frames`);
+        console.log(
+          `📊 Final Stats: ${frameCount} total frames | Avg FPS: ${avgFPS.toFixed(
+            2
+          )} | Duration: ${totalSeconds.toFixed(1)}s`
+        );
+      }
     };
-  }, [isRecording, isConnected]); // ⚡ removed sendMessage from deps
+  }, [isCameraOn, isRecording, isConnected]);
 
   const startCamera = async () => {
     try {

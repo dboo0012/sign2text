@@ -24,8 +24,9 @@ const pose = new Pose({
 ```javascript
 // Real-time bidirectional communication
 import io from "socket.io-client";
+import { API_CONFIG } from "../constants/environment";
 
-const socket = io("ws://localhost:8000");
+const socket = io(API_CONFIG.WS_BASE_URL);
 socket.emit("keypoint_sequence", keypointData);
 socket.on("prediction_result", updateUI);
 ```

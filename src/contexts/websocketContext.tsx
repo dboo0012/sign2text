@@ -8,6 +8,10 @@ import type {
   ErrorMessage,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
+import {
+  WS_VIDEO_STREAM_URL,
+  WEBSOCKET_CONFIG,
+} from "../constants/environment";
 
 interface WebSocketContextType {
   connectionState: WebSocketConnectionState;
@@ -20,7 +24,7 @@ interface WebSocketContextType {
     sequenceId?: string,
     format?: "openpose" | "openpose_raw"
   ) => void;
-  connect: () => void;
+  connect: (customUrl?: string) => void;
   disconnect: () => void;
   isConnected: boolean;
 }
@@ -35,15 +39,15 @@ interface WebSocketProviderProps {
 
 export function WebSocketProvider({
   children,
-  url = "ws://localhost:8000/ws/video_stream",
+  url = WS_VIDEO_STREAM_URL,
   autoConnect = false,
 }: WebSocketProviderProps) {
   const webSocketData = useWebSocket({
     url,
     autoConnect,
-    pingInterval: 30000,
-    reconnectAttempts: 3,
-    reconnectDelay: 1000,
+    pingInterval: WEBSOCKET_CONFIG.PING_INTERVAL,
+    reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
+    reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
   });
 
   return (
