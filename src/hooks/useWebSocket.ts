@@ -79,7 +79,8 @@ export function useWebSocket({
       console.log('WebSocket message received:', {
         type: message.type,
         timestamp: new Date().toISOString(),
-        messageSize: event.data.length
+        messageSize: event.data.length,
+        data: event.data.processed_data
       });
       setLastMessage(message);
 
@@ -104,8 +105,9 @@ export function useWebSocket({
   }, []);
 
   const connect = useCallback((customUrl?: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return; // Already connected
+    if (wsRef.current?.readyState === WebSocket.OPEN || 
+        wsRef.current?.readyState === WebSocket.CONNECTING) {
+      return; // Already connected or connecting
     }
 
     cleanup();
@@ -237,7 +239,7 @@ export function useWebSocket({
         wsRef.current.close();
       }
     };
-  }, [autoConnect, connect, cleanup]);
+  }, [autoConnect, cleanup]);
 
   return {
     connectionState,

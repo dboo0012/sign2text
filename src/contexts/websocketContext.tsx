@@ -8,7 +8,10 @@ import type {
   ErrorMessage,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
-import { WS_VIDEO_STREAM_URL } from "../constants/environment";
+import {
+  WS_VIDEO_STREAM_URL,
+  WEBSOCKET_CONFIG,
+} from "../constants/environment";
 
 interface WebSocketContextType {
   connectionState: WebSocketConnectionState;
@@ -42,9 +45,9 @@ export function WebSocketProvider({
   const webSocketData = useWebSocket({
     url,
     autoConnect,
-    pingInterval: 30000,
-    reconnectAttempts: 3,
-    reconnectDelay: 1000,
+    pingInterval: WEBSOCKET_CONFIG.PING_INTERVAL,
+    reconnectAttempts: WEBSOCKET_CONFIG.RECONNECT_ATTEMPTS,
+    reconnectDelay: WEBSOCKET_CONFIG.RECONNECT_DELAY,
   });
 
   return (
