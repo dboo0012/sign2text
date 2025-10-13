@@ -80,7 +80,7 @@ export function useWebSocket({
         type: message.type,
         timestamp: new Date().toISOString(),
         messageSize: event.data.length,
-        data: event.data.processed_data
+        data: message
       });
       setLastMessage(message);
 
