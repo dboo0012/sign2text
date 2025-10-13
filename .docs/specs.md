@@ -41,7 +41,7 @@ Building on the previous setup, implement basic WebSocket connectivity between t
 2. Frontend changes:
 
    - Create a new component WebSocketManager in src/components/
-   - Implement WebSocket connection to ws://localhost:8000/ws
+   - Implement WebSocket connection to the configured server endpoint (see environment constants)
    - Add connection status display (Connected/Disconnected/Connecting)
    - Create a simple test interface with an input field and send button
    - Display received messages from the server

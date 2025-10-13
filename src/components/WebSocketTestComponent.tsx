@@ -4,6 +4,7 @@ import { WebSocketConnectionState } from "../types/websocket";
 import type { OpenPoseData } from "../types/pose";
 import { loadDemoOpenPoseData } from "../utils/keypointsLoader";
 import TranslationCard from "./TranslationCard";
+import { WS_VIDEO_STREAM_URL } from "../constants/environment";
 
 interface TestMessage {
   id: string;
@@ -27,7 +28,7 @@ export default function WebSocketTestComponent() {
   } = useWebSocketContext();
 
   const [messages, setMessages] = useState<TestMessage[]>([]);
-  const [wsUrl, setWsUrl] = useState("ws://localhost:8000/ws/video_stream");
+  const [wsUrl, setWsUrl] = useState<string>(WS_VIDEO_STREAM_URL);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamInterval, setStreamInterval] = useState<number | null>(null);
 
@@ -97,7 +98,7 @@ export default function WebSocketTestComponent() {
   }, []);
 
   const handleConnect = () => {
-    connect();
+    connect(wsUrl);
   };
 
   const handleDisconnect = () => {
@@ -244,7 +245,7 @@ export default function WebSocketTestComponent() {
                 value={wsUrl}
                 onChange={(e) => setWsUrl(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="ws://localhost:8000/ws/video_stream"
+                placeholder={WS_VIDEO_STREAM_URL}
               />
             </div>
 

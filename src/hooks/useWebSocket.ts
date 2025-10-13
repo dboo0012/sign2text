@@ -24,7 +24,7 @@ interface UseWebSocketReturn {
   lastError: ErrorMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
   sendKeypoints: (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => void;
-  connect: () => void;
+  connect: (customUrl?: string) => void;
   disconnect: () => void;
   isConnected: boolean;
 }
@@ -44,6 +44,7 @@ export function useWebSocket({
   const [lastError, setLastError] = useState<ErrorMessage | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const currentUrlRef = useRef<string>(url);
   const pingIntervalRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectControllerRef = useRef<AbortController | null>(null);
@@ -102,16 +103,19 @@ export function useWebSocket({
     }
   }, []);
 
-  const connect = useCallback(() => {
+  const connect = useCallback((customUrl?: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return; // Already connected
     }
 
     cleanup();
     setConnectionState(WebSocketConnectionState.CONNECTING);
+    
+    const connectUrl = customUrl || url;
+    currentUrlRef.current = connectUrl;
 
     try {
-      wsRef.current = new WebSocket(url);
+      wsRef.current = new WebSocket(connectUrl);
 
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
@@ -142,7 +146,7 @@ export function useWebSocket({
 
           setTimeout(() => {
             if (!reconnectControllerRef.current?.signal.aborted) {
-              connect();
+              connect(currentUrlRef.current);
             }
           }, delay);
         } else if (event.code !== 1000) {
