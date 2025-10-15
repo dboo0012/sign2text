@@ -29,6 +29,7 @@ interface UseWebSocketReturn {
   connect: (customUrl?: string) => void;
   disconnect: () => void;
   isConnected: boolean;
+  setLastPrediction: React.Dispatch<React.SetStateAction<SuccessMessage | null>>;
 }
 
 export function useWebSocket({
@@ -264,5 +265,6 @@ export function useWebSocket({
     connect,
     disconnect,
     isConnected: connectionState === WebSocketConnectionState.CONNECTED,
+    setLastPrediction,
   };
 }

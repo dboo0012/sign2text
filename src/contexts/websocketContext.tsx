@@ -29,6 +29,9 @@ interface WebSocketContextType {
   connect: (customUrl?: string) => void;
   disconnect: () => void;
   isConnected: boolean;
+  setLastPrediction: React.Dispatch<
+    React.SetStateAction<SuccessMessage | null>
+  >;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
