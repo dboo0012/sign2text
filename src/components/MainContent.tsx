@@ -59,7 +59,7 @@ const MainContent = ({
           onLanguageChange={onLanguageChange}
         />
 
-        <DemoKeypointTester />
+        {/* <DemoKeypointTester /> */}
 
         {/* <HistoryCard translations={translations} /> */}
       </div>
