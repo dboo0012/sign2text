@@ -6,6 +6,7 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
+  SuccessMessage,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 
@@ -22,6 +23,7 @@ interface UseWebSocketReturn {
   lastMessage: IncomingMessage | null;
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
+  lastPrediction: SuccessMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
   sendKeypoints: (keypoints: OpenPoseKeypoints | OpenPoseData, sequenceId?: string, format?: "openpose" | "openpose_raw") => void;
   connect: (customUrl?: string) => void;
@@ -42,6 +44,7 @@ export function useWebSocket({
   const [lastKeypointsData, setLastKeypointsData] =
     useState<KeypointsMessage | null>(null);
   const [lastError, setLastError] = useState<ErrorMessage | null>(null);
+  const [lastPrediction, setLastPrediction] = useState<SuccessMessage | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const currentUrlRef = useRef<string>(url);
@@ -76,18 +79,27 @@ export function useWebSocket({
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: IncomingMessage = JSON.parse(event.data);
-      console.log('WebSocket message received:', {
-        type: message.type,
-        timestamp: new Date().toISOString(),
-        messageSize: event.data.length,
-        data: message
-      });
+      // console.log('WebSocket message received:', {
+      //   type: message.type,
+      //   timestamp: new Date().toISOString(),
+      //   messageSize: event.data.length,
+      //   data: message
+      // });
       setLastMessage(message);
 
       switch (message.type) {
         case "keypoints":
           setLastKeypointsData(message as KeypointsMessage);
           console.log('Keypoints response processed');
+          break;
+        case "success":
+          setLastPrediction(message as SuccessMessage);
+          console.log('Prediction received:', {
+            text: (message as SuccessMessage).prediction.text,
+            confidence: (message as SuccessMessage).prediction.confidence,
+            frames_processed: (message as SuccessMessage).prediction.frames_processed,
+            sequence_id: (message as SuccessMessage).processed_data.sequence_id
+          });
           break;
         case "error":
           setLastError(message as ErrorMessage);
@@ -246,6 +258,7 @@ export function useWebSocket({
     lastMessage,
     lastKeypointsData,
     lastError,
+    lastPrediction,
     sendMessage,
     sendKeypoints,
     connect,

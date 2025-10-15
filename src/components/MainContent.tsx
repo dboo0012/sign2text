@@ -5,7 +5,7 @@ import TranslationCard from "./TranslationCard";
 // import HistoryCard from "./HistoryCard";
 import WebSocketTestComponent from "./WebSocketTestComponent";
 import DemoKeypointTester from "./DemoKeypointTester";
-import type { Translation } from "../types/translation";
+import { useWebSocketContext } from "../contexts/websocketContext";
 
 interface MainContentProps {
   showTestComponent: boolean;
@@ -14,12 +14,6 @@ interface MainContentProps {
   onStopRecording: () => void;
   selectedLanguage: string;
   onLanguageChange: (language: string) => void;
-  currentSign: {
-    sign: string;
-    confidence: number;
-  } | null;
-  translations: Translation[]; // Currently commented out
-  onTranslationReceived?: (translation: string, confidence: number) => void;
 }
 
 const MainContent = ({
@@ -29,11 +23,12 @@ const MainContent = ({
   onStopRecording,
   selectedLanguage,
   onLanguageChange,
-  currentSign,
-  translations, // Currently not used but kept for future
-  onTranslationReceived,
 }: MainContentProps) => {
-  void translations; // Suppress unused variable warning
+  const { lastPrediction } = useWebSocketContext();
+
+  // Get the recognized text from WebSocket prediction
+  const recognizedText = lastPrediction?.processed_data.prediction.text || "";
+
   if (showTestComponent) {
     return <WebSocketTestComponent />;
   }
@@ -56,14 +51,10 @@ const MainContent = ({
 
       {/* Right Panel - Information Section */}
       <div className="bg-gray-50 p-6 space-y-6 overflow-y-auto">
-        <RecognitionCard
-          currentSign={currentSign}
-          isRecording={isRecording}
-          onWebSocketTranslation={onTranslationReceived}
-        />
+        <RecognitionCard isRecording={isRecording} />
 
         <TranslationCard
-          recognizedText={currentSign?.sign || ""}
+          recognizedText={recognizedText}
           selectedLanguage={selectedLanguage}
           onLanguageChange={onLanguageChange}
         />

@@ -6,6 +6,7 @@ import type {
   OutgoingMessage,
   KeypointsMessage,
   ErrorMessage,
+  SuccessMessage,
 } from "../types/websocket";
 import type { OpenPoseKeypoints, OpenPoseData } from "../types/pose";
 import {
@@ -18,6 +19,7 @@ interface WebSocketContextType {
   lastMessage: IncomingMessage | null;
   lastKeypointsData: KeypointsMessage | null;
   lastError: ErrorMessage | null;
+  lastPrediction: SuccessMessage | null;
   sendMessage: (message: OutgoingMessage) => void;
   sendKeypoints: (
     keypoints: OpenPoseKeypoints | OpenPoseData,

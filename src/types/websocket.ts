@@ -47,6 +47,63 @@ export interface ErrorMessage extends WebSocketMessage {
 }
 
 /**
+ * 🔹 Prediction result from the backend model
+ */
+export interface PredictionResult {
+  success: boolean;
+  text: string;
+  confidence: number;
+  frames_processed: number;
+}
+
+/**
+ * 🔹 Detection summary for processed frames
+ */
+export interface DetectionSummary {
+  pose_points: number;
+  face_points: number;
+  left_hand_points: number;
+  right_hand_points: number;
+  total_points: number;
+  has_pose: boolean;
+  has_face: boolean;
+  has_hands: boolean;
+}
+
+/**
+ * 🔹 Processing information from backend
+ */
+export interface ProcessingInfo {
+  sequence_id: number;
+  timestamp: number;
+  detection_summary: DetectionSummary;
+}
+
+/**
+ * 🔹 Processed data from backend prediction
+ */
+export interface ProcessedData {
+  processing_info: ProcessingInfo;
+  feature_vector_size: number;
+  model_ready: boolean;
+  buffer_size: number;
+  prediction: PredictionResult;
+  sequence_id: number;
+  format: string;
+}
+
+/**
+ * 🔹 Success message with prediction from backend
+ */
+export interface SuccessMessage extends WebSocketMessage {
+  type: "success";
+  success: boolean;
+  message: string;
+  prediction: PredictionResult;
+  processed_data: ProcessedData;
+}
+
+/**
  * 🔹 New: Frame message for sending video frames
  */
 export interface FrameMessage extends WebSocketMessage {
@@ -60,7 +117,8 @@ export interface FrameMessage extends WebSocketMessage {
 export type IncomingMessage =
   | KeypointsMessage
   | PongMessage
-  | ErrorMessage;
+  | ErrorMessage
+  | SuccessMessage;
 
 export type OutgoingMessage =
   | PingMessage
