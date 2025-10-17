@@ -47,6 +47,24 @@ const languages = [
   { code: "ru", name: "Russian", countryCode: "RU" },
 ];
 
+const ttsLanguageCodes: { [key: string]: string } = {
+  en: "en-US",
+  ms: "ms-MY",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  zh: "zh-CN",
+  ar: "ar-SA",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  th: "th-TH",
+  vi: "vi-VN",
+  id: "id-ID",
+  pt: "pt-PT",
+  it: "it-IT",
+  ru: "ru-RU",
+};
+
 const TranslationCard = ({
   recognizedText,
   selectedLanguage,
@@ -210,32 +228,11 @@ const TranslationCard = ({
       speechSynthesis.cancel();
     }
 
+    console.log("TTS Triggered: ", displayText);
     setIsSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(displayText);
 
-    // Map language codes to proper BCP 47 tags for better compatibility
-    const languageMap: { [key: string]: string } = {
-      en: "en-US",
-      ms: "ms-MY",
-      es: "es-ES",
-      fr: "fr-FR",
-      de: "de-DE",
-      zh: "zh-CN",
-      ar: "ar-SA",
-      ja: "ja-JP",
-      ko: "ko-KR",
-      th: "th-TH",
-      vi: "vi-VN",
-      id: "id-ID",
-      pt: "pt-PT",
-      it: "it-IT",
-      ru: "ru-RU",
-    };
-
-    utterance.lang = languageMap[selectedLanguage] || "en-US";
-    utterance.rate = 0.9; // Slightly slower for clarity
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+    utterance.lang = ttsLanguageCodes[selectedLanguage] || "en-US";
 
     utterance.onend = () => {
       setIsSpeaking(false);
@@ -246,10 +243,8 @@ const TranslationCard = ({
       setIsSpeaking(false);
     };
 
-    // Small delay to ensure cancellation completes
-    setTimeout(() => {
-      speechSynthesis.speak(utterance);
-    }, 100);
+    // Add this line to actually speak!
+    speechSynthesis.speak(utterance);
   };
 
   const handleCopyToClipboard = async () => {
