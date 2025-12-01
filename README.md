@@ -43,3 +43,8 @@ npm run dev
 // Add to .env
 VITE_OPENAI_API_KEY=''
 ```
+
+# Note
+
+- Currently a timer to display fixed text output is in place to show the flow more consistently, to view the actual latency of model inferenced output, remove the timer logic and the code would work as expected still.
+- However, incoming inference output would still override the fixed text once received from backend.
