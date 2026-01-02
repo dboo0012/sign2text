@@ -2,6 +2,10 @@
 
 WASL Sign Language Recognition interface authored by Team MCS12 - FIT3162.
 
+# API
+
+https://github.com/dboo0012/sign2text-api
+
 # Tech stack
 
 ## Frontend
